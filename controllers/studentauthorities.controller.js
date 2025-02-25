@@ -13,7 +13,7 @@ export const createStudentAuthority = async (req, res) => {
     const newAuthority = new StudentAuthority({ student, position });
     await newAuthority.save();
 
-    res.status(201).json({ message: "Student authority created successfully", data: newAuthority });
+    res.status(200).json({ message: "Student authority created successfully", data: newAuthority });
   } catch (error) {
     res.status(500).json({ message: "Error creating student authority", error: error.message });
   }

@@ -1,5 +1,6 @@
 import FacultyAuthority from "../models/facultyauthorities.models.js";
 import bcryptjs from "bcryptjs";
+import jwt from "jsonwebtoken"
 
 
 // Create a new Faculty Authority
@@ -15,7 +16,7 @@ export const createFacultyAuthority = async (req, res) => {
     const newAuthority = new FacultyAuthority({ faculty, position });
     await newAuthority.save();
 
-    res.status(201).json({ message: "Faculty authority created successfully", data: newAuthority });
+    res.status(200).json({ message: "Faculty authority created successfully", data: newAuthority });
   } catch (error) {
     res.status(500).json({ message: "Error creating faculty authority", error: error.message });
   }
@@ -56,7 +57,7 @@ export const loginFacultyAuthority = async (req, res) => {
 
       res.cookie("token", token)
   
-      res.status(200).send({ token });
+      res.status(200).send({ token, authority });
   
     } catch (error) {
       res.status(500).send({ message: error.message })

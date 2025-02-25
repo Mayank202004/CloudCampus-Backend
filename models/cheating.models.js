@@ -26,7 +26,7 @@ const CheatingRecordSchema = new mongoose.Schema(
     caughtBy: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Faculty",
-      required: true,
+      // required: true,
     },
   },
   { timestamps: true }

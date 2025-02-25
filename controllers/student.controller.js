@@ -7,7 +7,7 @@ import Student from "../models/student.models.js";
 // @access Public
 export const createStudent = async (req, res) => {
   try {
-    const { registrationNo, name, email, password, department, idPhoto, dob } = req.body;
+    const { registrationNo, name, email, password, department, profilePhoto, idPhoto, dob } = req.body;
 
     // Check if student already exists
     const existingStudent = await Student.findOne({ $or: [{ email }, { registrationNo }] });
@@ -24,6 +24,7 @@ export const createStudent = async (req, res) => {
       password: hashedPassword,
       department,
       idPhoto,
+      profilePhoto,
       dob
     });
     await newStudent.save();
@@ -41,7 +42,7 @@ export const createStudent = async (req, res) => {
       sameSite: "lax",  // ✅ Required for cross-origin requests
   });
 
-    res.status(201).json({ message: "Student registered successfully", student: newStudent, token });
+    res.status(200).json({ message: "Student registered successfully", student: newStudent, token });
   } catch (error) {
     res.status(500).json({ message: "Server error", error: error.message });
   }
@@ -51,26 +52,38 @@ export const getAllStudents = async (req, res) => {
   try {
     const students = await Student.find();
 
-    res.status(201).json({ students });
+    res.status(200).json({ students });
   } catch (error) {
     res.status(500).json({ message: "Server error", error: error.message });
   }
 };
 
+export const getCurrentStudent = async (req, res) => {
+  try {
+    const student = await Student.findById(req.student._id);
+    res.status(200).send({student})
+  } catch (error){
+    res.status(500).json({ message: "Server error", error: error.message });
+  }
+}
+
 export const updateStudent = async (req, res) => {
   try {
     const { profilePhoto } = req.body;
+    console.log(profilePhoto)
 
     // Check if student already exists
-    let student = await Student.findById(req.params.studentId);
+    await Student.findByIdAndUpdate(req.student._id, {profilePhoto});
+    const student = await Student.findById(req.student._id)
     if (!student) {
       return res.status(404).json({ message: "Student not found." });
     }
-    student.profilePhoto = profilePhoto;
+    // console.log(student)
+    // student.profilePhoto = profilePhoto;
 
-    await student.save();
+    // await student.save();
 
-    res.status(201).json({ message: "Student updates successfully", student });
+    res.status(200).json({ message: "Student updates successfully", student });
   } catch (error) {
     res.status(500).json({ message: "Server error", error: error.message });
   }
@@ -101,7 +114,7 @@ export const loginStudent = async (req, res) => {
     res.cookie("token", token);
 
 
-    res.status(200).send({ token });
+    res.status(200).send({ student, token });
 
   } catch (error) {
     res.status(500).send({ message: error.message })

@@ -43,7 +43,7 @@ const FacilityBookingSchema = new mongoose.Schema(
     },
     approvedBy: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "Faculty", // References faculty who approves the booking
+      ref: "FacultyAuthority", // References faculty who approves the booking
     },
     reasonForRejection: {
       type: String,

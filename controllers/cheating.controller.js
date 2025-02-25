@@ -8,6 +8,9 @@ import Student from "../models/student.models.js";
 export const createCheatingRecord = async (req, res) => {
   try {
     const { studentId, title, description, proof } = req.body;
+    console.log(studentId, title, description, proof)
+    let arr = [];
+    arr.push(proof)
 
     const student = await Student.findById(studentId);
     if (!student) {
@@ -18,13 +21,14 @@ export const createCheatingRecord = async (req, res) => {
       student: studentId,
       title,
       description,
-      proof,
-      caughtBy: req.faculty._id, 
+      proof: arr,
+      caughtBy: req.faculty?._id, 
     });
 
     await cheatingRecord.save();
-    res.status(201).json({ message: "Cheating record created successfully", record: cheatingRecord });
+    res.status(200).json({ message: "Cheating record created successfully", record: cheatingRecord });
   } catch (error) {
+    console.log(error)
     res.status(500).json({ message: error.message });
   }
 };
@@ -34,8 +38,10 @@ export const createCheatingRecord = async (req, res) => {
 export const getCheatingRecords = async (req, res) => {
   try {
     const records = await CheatingRecord.find().populate("student", "name email");
+    // console.log(records)
     res.status(200).json(records);
   } catch (error) {
+    console.log(error)
     res.status(500).json({ message: error.message });
   }
 };

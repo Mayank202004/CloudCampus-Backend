@@ -18,7 +18,7 @@ export const createComplaint = async (req, res) => {
         });
 
         await complaint.save();
-        res.status(201).json({ message: "Complaint submitted successfully", complaint });
+        res.status(200).json({ message: "Complaint submitted successfully", complaint });
     } catch (error) {
         res.status(500).json({ message: error.message });
     }
@@ -33,7 +33,7 @@ export const getAllComplaints = async (req, res) => {
             .populate("student", "name email")
             .sort({ createdAt: -1 });
 
-        complaints = complaints.filter((complaint) => {
+        complaints = complaints.map((complaint) => {
             if (complaint.keepAnonymousCount <= process.env.COUNT_OF_BOARD_OF_AUTHORITIES / 2) {
                 complaint.student = null;
             }

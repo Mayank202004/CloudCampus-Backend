@@ -13,6 +13,7 @@ const StudentSchema = new mongoose.Schema(
     },
     profilePhoto:{
       type: String,
+      default: ""
     },
     idPhoto:{
       type:String

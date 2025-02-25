@@ -1,30 +1,43 @@
 import mongoose from "mongoose";
 
-const RequestSchema = new mongoose.Schema(
+const ApplicationSchema = new mongoose.Schema(
   {
-    title: {
-      type: mongoose.Schema.Types.ObjectId,
-      refPath: "fromModel",
+    from: {
+      type: String,
+      // refPath: "fromModel",
       required: true,
     },
-    fromModel: {
-        type: String,
-        required: true,
-        enum: ["Student", "StudentAuthority"],
-      },
-    to: {
-      type: mongoose.Schema.Types.ObjectId,
-      required: true,
-      refPath: "toModel",
+    title:{
+      type: String,
     },
-    toModel: {
+    // fromModel: {
+    //   type: String,
+    //   // required: true,
+    //   enum: ["Student", "StudentAuthority"],
+    // },
+    to: [{
       type: String,
       required: true,
-      enum: ["FacultyAuthority", "StudentAuthority"],
+      // refPath: "toModel",
+    }],
+    isApproved:{
+      type: Boolean,
+      
+    },
+    // toModel: {
+    //   type: String,
+    //   required: true,
+    //   enum: ["FacultyAuthority", "StudentAuthority"],
+    // },
+    body: {
+      type: String
+    },
+    file: {
+      type: String
     }
   },
   { timestamps: true }
 );
 
-const Request = mongoose.model("Request", RequestSchema);
-export default Request;
+const Application = mongoose.model("Application", ApplicationSchema);
+export default Application;

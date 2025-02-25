@@ -31,7 +31,7 @@ export const createFaculty = async (req, res) => {
     });
 
     await faculty.save();
-    res.status(201).json({ message: "Faculty created successfully", faculty });
+    res.status(200).json({ message: "Faculty created successfully", faculty });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }

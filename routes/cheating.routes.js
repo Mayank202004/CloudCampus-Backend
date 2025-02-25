@@ -11,10 +11,10 @@ import { facultyAuthMiddleware, studentAuthMiddleware } from "../middlewares/aut
 const router = express.Router();
 
 // Create a new cheating record (Only faculty can create)
-router.post("/", facultyAuthMiddleware, createCheatingRecord);
+router.post("/", createCheatingRecord);
 
 // Get all cheating records (Admin & Faculty can view)
-router.get("/", studentAuthMiddleware, getCheatingRecords);
+router.get("/", getCheatingRecords);
 
 router.put("/:id", facultyAuthMiddleware, updateCheatingRecord);
 
