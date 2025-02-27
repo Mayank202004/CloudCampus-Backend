@@ -15,7 +15,8 @@ const FacilitySchema = new mongoose.Schema(
           type: String
         },
         bookedBy: {
-          type: String
+          type: mongoose.Schema.Types.ObjectId,
+          ref: "Student"
         }
       }]
     }]

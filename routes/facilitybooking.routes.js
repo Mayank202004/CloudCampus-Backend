@@ -11,7 +11,7 @@ import { studentAuthMiddleware } from "../middlewares/auth.js";
 const router = express.Router();
 
 // Create a new booking
-router.post("/book", bookSlot);
+router.post("/book", studentAuthMiddleware,bookSlot);
 
 // Get all bookings
 router.post("/", getBookedSlots);

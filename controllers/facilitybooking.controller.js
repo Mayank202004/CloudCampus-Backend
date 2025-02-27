@@ -8,6 +8,7 @@ import Student from "../models/student.models.js";
 export const bookSlot = async (req, res) => {
   try {
     const { facilityName, date, timeSlots } = req.body;
+    const bookedBy = req.student._id;
     // const bookedBy = req.student.email; // Assuming student info is extracted from auth middleware
 
     if (!facilityName || !date || !timeSlots || !Array.isArray(timeSlots)) {
@@ -15,7 +16,11 @@ export const bookSlot = async (req, res) => {
     }
 
     const queryDate = new Date(date);
-    let facility = await Facility.findOne({ facilityName });
+    let facility = await Facility.findOneAndUpdate(
+      { facilityName },
+      { $setOnInsert: { facilityName, bookings: [] } },
+      { new: true, upsert: true } // upsert: true creates the facility if not found
+    );
 
     if (!facility) {
       return res.status(404).json({ message: "Facility not found" });
@@ -26,16 +31,18 @@ export const bookSlot = async (req, res) => {
     );
 
     if (existingBooking) {
-      // Merge new slots while avoiding duplicates
-      existingBooking.slots = [
-        ...existingBooking.slots,
-        ...timeSlots.map(time => ({ time }))
-      ];
+      // Prevent duplicate slot times
+      const existingTimes = new Set(existingBooking.slots.map(slot => slot.time));
+      const newSlots = timeSlots
+        .filter(time => !existingTimes.has(time)) // Only add if it's not already booked
+        .map(time => ({ time, bookedBy }));
+
+      existingBooking.slots.push(...newSlots);
     } else {
       // Create a new booking entry
       facility.bookings.push({
         date: queryDate,
-        slots: timeSlots.map(time => ({ time }))
+        slots: timeSlots.map(time => ({ time, bookedBy }))
       });
     }
 

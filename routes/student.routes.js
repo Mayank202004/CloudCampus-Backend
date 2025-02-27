@@ -1,5 +1,5 @@
 import express from "express";
-import { createStudent, loginStudent, updateStudent, getAllStudents, getCurrentStudent } from "../controllers/student.controller.js";
+import { createStudent, loginStudent, updateStudent, getAllStudents, getCurrentStudent, updateBloodGroup } from "../controllers/student.controller.js";
 import { studentAuthMiddleware } from "../middlewares/auth.js";
 
 const router = express.Router();
@@ -15,6 +15,7 @@ router.post("/login", loginStudent);
 
 
 router.put("/", studentAuthMiddleware, updateStudent);
+router.put("/updatebloodgroup", studentAuthMiddleware, updateBloodGroup);
 
 
 export default router;
