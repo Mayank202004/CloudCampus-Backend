@@ -56,8 +56,9 @@ export const loginFacultyAuthority = async (req, res) => {
       const token = jwt.sign(payload, process.env.JWT_SECRET_KEY);
 
       res.cookie("token", token)
-  
-      res.status(200).send({ token, authority });
+      res.cookie("role", authority.role)
+
+      res.status(200).send({ token, authority, role: authority.role });
   
     } catch (error) {
       res.status(500).send({ message: error.message })

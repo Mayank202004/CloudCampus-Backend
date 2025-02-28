@@ -1,5 +1,5 @@
 import express from "express";
-import { createStudentAuthority, getStudentAuthorities } from "../controllers/studentauthorities.controller.js";
+import { createStudentAuthority, getStudentAuthorities, loginStudentAuthority } from "../controllers/studentauthorities.controller.js";
 import { facultyAuthMiddleware } from "../middlewares/auth.js";
 
 const router = express.Router();
@@ -9,5 +9,7 @@ router.post("/", facultyAuthMiddleware, createStudentAuthority);
 
 // Route to get all student authorities
 router.get("/", getStudentAuthorities);
+
+router.post("/login", loginStudentAuthority)
 
 export default router;

@@ -4,31 +4,25 @@ const ApplicationSchema = new mongoose.Schema(
   {
     from: {
       type: String,
-      // refPath: "fromModel",
       required: true,
     },
-    title:{
+    title: {
       type: String,
     },
-    // fromModel: {
-    //   type: String,
-    //   // required: true,
-    //   enum: ["Student", "StudentAuthority"],
-    // },
     to: [{
-      type: String,
-      required: true,
-      // refPath: "toModel",
+      authority: {
+        type: String,
+        required: true,
+      },
+      status: {
+        type: String,
+        enum: ["approved", "rejected", "pending"]
+      }
     }],
-    isApproved:{
+    isApproved: {
       type: Boolean,
-      
+
     },
-    // toModel: {
-    //   type: String,
-    //   required: true,
-    //   enum: ["FacultyAuthority", "StudentAuthority"],
-    // },
     body: {
       type: String
     },

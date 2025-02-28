@@ -32,9 +32,9 @@ const permissions = [
   ];
 
   const applications = {
-    LeaveApplication : ["67b6cc7e3f0313be8b23accd"/*class coordinator*/, "67b6cc1c3f0313be8b23acc9"/*HOD */],
-    EventOrganisation : ["General Secretary", "67ba0d2a70096377beb26419"/*Dean of affairs */, "67ba214570096377beb26424"/*Director */],
-    GirlsHostelPermission : ["Girls Representative", "67b6cc1c3f0313be8b23acc9"/*hod */, "67ba0d7270096377beb2641a"/*Girls hostel warden */],
-    BoysHostelPermission : ["67b6cc1c3f0313be8b23acc9"/*HOD */,"Boys Hostel Warden"],
-    GroundPermission : ["Sports Secretary", "67ba0d2a70096377beb26419"/*Dean of affairs */, "67ba214570096377beb26424"/*Director */],
+    LeaveApplication : ["67ba1c5c70096377beb26422"/*class coordinator*/, "67b776e7f4945bf2bc1bd8f5"/*HOD */],
+    EventOrganisation : ["67ba0e6d70096377beb2641e"/*Dean of affairs */, "67ba21b270096377beb26425"/*Director */],
+    GirlsHostelPermission : [ "67b776e7f4945bf2bc1bd8f5"/*hod */, "67ba10cf70096377beb26420"/*Girls hostel warden */],
+    BoysHostelPermission : ["67b776e7f4945bf2bc1bd8f5"/*HOD */],
+    GroundPermission : ["67ba0e6d70096377beb2641e"/*Dean of affairs */, "67ba21b270096377beb26425"/*Director */],
   }
