@@ -8,6 +8,7 @@ import Student from "../models/student.models.js";
 export const bookSlot = async (req, res) => {
   try {
     const { facilityName, date, timeSlots } = req.body;
+    const bookedBy = req.student._id;
     // const bookedBy = req.student.email; // Assuming student info is extracted from auth middleware
 
     if (!facilityName || !date || !timeSlots || !Array.isArray(timeSlots)) {
@@ -15,7 +16,11 @@ export const bookSlot = async (req, res) => {
     }
 
     const queryDate = new Date(date);
-    let facility = await Facility.findOne({ facilityName });
+    let facility = await Facility.findOneAndUpdate(
+      { facilityName },
+      { $setOnInsert: { facilityName, bookings: [] } },
+      { new: true, upsert: true } // upsert: true creates the facility if not found
+    );
 
     if (!facility) {
       return res.status(404).json({ message: "Facility not found" });
@@ -26,16 +31,18 @@ export const bookSlot = async (req, res) => {
     );
 
     if (existingBooking) {
-      // Merge new slots while avoiding duplicates
-      existingBooking.slots = [
-        ...existingBooking.slots,
-        ...timeSlots.map(time => ({ time }))
-      ];
+      // Prevent duplicate slot times
+      const existingTimes = new Set(existingBooking.slots.map(slot => slot.time));
+      const newSlots = timeSlots
+        .filter(time => !existingTimes.has(time)) // Only add if it's not already booked
+        .map(time => ({ time, bookedBy }));
+
+      existingBooking.slots.push(...newSlots);
     } else {
       // Create a new booking entry
       facility.bookings.push({
         date: queryDate,
-        slots: timeSlots.map(time => ({ time }))
+        slots: timeSlots.map(time => ({ time, bookedBy }))
       });
     }
 
@@ -56,48 +63,43 @@ export const bookSlot = async (req, res) => {
 // @access  Public (should be restricted)
 export const getBookedSlots = async (req, res) => {
   try {
-    const { date, facilityName } = req.body;
+    const { facilityName, date } = req.body;
 
-    if (!date || !facilityName) {
-      return res.status(400).json({ message: "Date and facilityName are required" });
+    if (!facilityName || !date) {
+      return res.status(400).json({ message: "Facility name and date are required." });
     }
 
-    const queryDate = new Date(date);
-    // queryDate.setHours(0, 0, 0, 0); 
+    const queryDate = new Date(date).toISOString().split("T")[0];
 
-    const facility = await Facility.findOne({
-      facilityName,
-    });
+    // Find the facility and its bookings for the given date
+    const facility = await Facility.findOne({ facilityName })
+      .populate("bookings.slots.bookedBy", "name email department") // Populate bookedBy field with selected fields
+      .lean(); // Convert Mongoose object to plain JSON for easier handling
 
     if (!facility) {
-      // const facility = new Facility({ date, facilityName, bookings:[] });
-      // await facility.save();
-      return res.status(404).send({message:"Facility not found"})
+      return res.status(404).json({ message: "Facility not found." });
     }
 
-    const bookingsForDate = facility.bookings.find(
-      (booking) => new Date(booking.date).toISOString() === queryDate.toISOString()
+    // Filter bookings to only include the ones matching the requested date
+    const filteredBookings = facility.bookings.filter(
+      (booking) => new Date(booking.date).toISOString().split("T")[0] === queryDate
     );
+    const sortedSlots = filteredBookings.flatMap(booking => booking.slots)
+  .sort((a, b) => a.time.localeCompare(b.time));
 
-    if (!bookingsForDate) {
-      return res.status(200).json({ date: queryDate, slots: [] });
-    }
 
-    const bookedSlotsWithDetails = await Promise.all(
-      bookingsForDate.slots.map(async (slot) => {
-        const student = await Student.findOne({ email: slot.bookedBy }).select("name email department");
-        return {
-          time: slot.time,
-          bookedBy: student || { email: slot.bookedBy, name: "Unknown", department: "Unknown" }, // Handle cases where student isn't found
-        };
-      })
-    );
+    // Extract all booked slot times
+    const times = filteredBookings.flatMap(booking =>
+      booking.slots.map(slot => slot.time)
+    ).sort((a, b) => a.localeCompare(b));
+    
 
-    res.status(200).json({ date: queryDate, slots: bookedSlotsWithDetails, times: bookedSlotsWithDetails.map(booking => booking.time) });
+    res.status(200).json({ facilityName, date, bookings: sortedSlots,times });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    res.status(500).json({ message: "Server error", error: error.message });
   }
 };
+
 
 // @desc    Get facility booking by ID
 // @route   GET /api/bookings/:id

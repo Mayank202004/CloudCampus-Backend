@@ -1,7 +1,7 @@
 {
   "name": "cloudcampus-backend",
   "version": "1.0.0",
-  "description": "",
+  "description": "<!-- delete cloudinary image -->\r <!-- get all complaints -->\r college leave email\r notification",
   "main": "index.js",
   "type": "module",
   "scripts": {
