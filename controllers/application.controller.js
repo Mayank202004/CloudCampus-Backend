@@ -3,6 +3,7 @@ import Application from "../models/application.models.js";
 import FacultyAuthority from "../models/facultyauthorities.models.js";
 import Student from "../models/student.models.js";
 import StudentAuthority from "../models/studentauthorities.models.js";
+import Notification from "../models/notification.models.js";
 
 // Create a new application
 export const createApplication = async (req, res) => {
@@ -43,6 +44,7 @@ export const createApplication = async (req, res) => {
     res.status(200).json({ message: "Application created successfully", application: newApplication });
 
   } catch (error) {
+    console.log(error);
     res.status(500).json({ message: error.message });
   }
 };
