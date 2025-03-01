@@ -30,3 +30,11 @@ const permissions = [
       emails: ["csehod@sggs.ac.in"]
     }
   ];
+
+  const applications = {
+    LeaveApplication : ["67ba1c5c70096377beb26422"/*class coordinator*/, "67b776e7f4945bf2bc1bd8f5"/*HOD */],
+    EventOrganisation : ["67ba0e6d70096377beb2641e"/*Dean of affairs */, "67ba21b270096377beb26425"/*Director */],
+    GirlsHostelPermission : [ "67b776e7f4945bf2bc1bd8f5"/*hod */, "67ba10cf70096377beb26420"/*Girls hostel warden */],
+    BoysHostelPermission : ["67b776e7f4945bf2bc1bd8f5"/*HOD */],
+    GroundPermission : ["67ba0e6d70096377beb2641e"/*Dean of affairs */, "67ba21b270096377beb26425"/*Director */],
+  }

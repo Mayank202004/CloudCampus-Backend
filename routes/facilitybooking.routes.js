@@ -1,7 +1,7 @@
 import express from "express";
 import {
-  createBooking,
-  getAllBookings,
+  bookSlot,
+  getBookedSlots,
   getBookingById,
   updateBookingStatus,
   deleteBooking,
@@ -11,18 +11,18 @@ import { studentAuthMiddleware } from "../middlewares/auth.js";
 const router = express.Router();
 
 // Create a new booking
-router.post("/", studentAuthMiddleware, createBooking);
+router.post("/book", studentAuthMiddleware,bookSlot);
 
 // Get all bookings
-router.get("/", studentAuthMiddleware, getAllBookings);
+router.post("/", getBookedSlots);
 
 // Get a booking by ID
 // router.get("/:id", getBookingById);
 
 // Update booking status (approve/reject)
-router.put("/:id", updateBookingStatus);
+// router.put("/:id", updateBookingStatus);
 
 // Delete a booking
-router.delete("/:id", deleteBooking);
+// router.delete("/:id", deleteBooking);
 
 export default router;

@@ -16,7 +16,17 @@ const NotificationSchema = new mongoose.Schema(
       ref: 'Student',
       required: true,
       trim: true,
-    }
+    },
+    from: {
+      type: mongoose.Schema.Types.ObjectId,
+      // required: true,
+      refPath: "fromModel",
+    },
+    fromModel: {
+      type: String,
+      // required: true,
+      enum: ["FacultyAuthority", "StudentAuthority"],
+    },
   },
   { timestamps: true }
 );

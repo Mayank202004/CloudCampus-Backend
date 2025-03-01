@@ -6,10 +6,10 @@ const ComplaintSchema = new mongoose.Schema(
       type: String,
       required: true
     },
-    complaintTo: {
+    complaintTo: [{
       type: String,
       required: true
-    },
+    }],
     description: {
       type: String,
       required: true,

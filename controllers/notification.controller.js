@@ -18,10 +18,11 @@ export const createNotification = async (req, res) => {
       title,
       description,
       notifiedTo,
+      from:req.faculty?._id
     });
 
     await notification.save();
-    res.status(201).json({ message: "Notification created successfully", notification });
+    res.status(200).json({ message: "Notification created successfully", notification });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }

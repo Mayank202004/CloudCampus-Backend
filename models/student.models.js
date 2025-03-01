@@ -13,6 +13,7 @@ const StudentSchema = new mongoose.Schema(
     },
     profilePhoto:{
       type: String,
+      default: ""
     },
     idPhoto:{
       type:String
@@ -43,6 +44,10 @@ const StudentSchema = new mongoose.Schema(
     //   match: [/^\d{10}$/, "Please enter a valid 10-digit phone number"],
     },
     dob: {
+      type: String,
+      required: false,
+    },
+    bloodGroup:{
       type: String,
       required: false,
     },

@@ -7,7 +7,7 @@ import Student from "../models/student.models.js";
 // @access Public
 export const createStudent = async (req, res) => {
   try {
-    const { registrationNo, name, email, password, department, idPhoto, dob } = req.body;
+    const { registrationNo, name, email, password, department, profilePhoto, idPhoto, dob } = req.body;
 
     // Check if student already exists
     const existingStudent = await Student.findOne({ $or: [{ email }, { registrationNo }] });
@@ -24,6 +24,7 @@ export const createStudent = async (req, res) => {
       password: hashedPassword,
       department,
       idPhoto,
+      profilePhoto,
       dob
     });
     await newStudent.save();
@@ -51,30 +52,65 @@ export const getAllStudents = async (req, res) => {
   try {
     const students = await Student.find();
 
-    res.status(201).json({ students });
+    res.status(200).json({ students });
   } catch (error) {
     res.status(500).json({ message: "Server error", error: error.message });
   }
 };
+
+export const getCurrentStudent = async (req, res) => {
+  try {
+    const student = await Student.findById(req.student._id);
+    res.status(200).send({student})
+  } catch (error){
+    res.status(500).json({ message: "Server error", error: error.message });
+  }
+}
+
 
 export const updateStudent = async (req, res) => {
   try {
     const { profilePhoto } = req.body;
+    console.log(profilePhoto)
 
     // Check if student already exists
-    let student = await Student.findById(req.params.studentId);
+    await Student.findByIdAndUpdate(req.student._id, {profilePhoto});
+    const student = await Student.findById(req.student._id)
     if (!student) {
       return res.status(404).json({ message: "Student not found." });
     }
-    student.profilePhoto = profilePhoto;
-
-    await student.save();
-
-    res.status(201).json({ message: "Student updates successfully", student });
+    res.status(200).json({ message: "Student updates successfully", student });
   } catch (error) {
     res.status(500).json({ message: "Server error", error: error.message });
   }
 };
+
+// @desc Update student details
+// @route PUT /api/students//updatebloodgroup 
+export const updateBloodGroup = async (req, res) => {
+  try {
+    const { bloodGroup } = req.body;
+
+    if (!bloodGroup) {
+      return res.status(400).json({ message: "Blood group is required." });
+    }
+
+    // Update only the bloodGroup field
+    await Student.findByIdAndUpdate(req.student._id, { bloodGroup });
+
+    // Fetch the updated student details
+    const student = await Student.findById(req.student._id);
+
+    if (!student) {
+      return res.status(404).json({ message: "Student not found." });
+    }
+
+    res.status(200).json({ message: "Blood group updated successfully", student });
+  } catch (error) {
+    res.status(500).json({ message: "Server error", error: error.message });
+  }
+};
+
 
 
 export const loginStudent = async (req, res) => {
@@ -99,9 +135,10 @@ export const loginStudent = async (req, res) => {
     const token = jwt.sign(payload, process.env.JWT_SECRET_KEY);
 
     res.cookie("token", token);
+    res.cookie("role", "student");
 
 
-    res.status(200).send({ token });
+    res.status(200).send({ student, token, role: "student" });
 
   } catch (error) {
     res.status(500).send({ message: error.message })

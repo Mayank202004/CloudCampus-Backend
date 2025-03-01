@@ -26,7 +26,11 @@ const ElectionSchema = new mongoose.Schema(
                 }
             }
         ],
-        date: {
+        startDate: {
+            type: Date,
+            required: true
+        },
+        endDate: {
             type: Date,
             required: true
         }

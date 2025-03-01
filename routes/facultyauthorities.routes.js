@@ -9,7 +9,7 @@ router.post("/", createFacultyAuthority);
 // Route to get all faculty authorities
 router.get("/", getFacultyAuthorities);
 
-router.get("/login", loginFacultyAuthority);
+router.post("/login", loginFacultyAuthority);
 
 
 export default router;

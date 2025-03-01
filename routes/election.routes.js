@@ -2,6 +2,7 @@ import express from "express";
 import {
   createElection,
   getElectionDetails,
+  getElectionInfo,
   voteForElection,
   // registerForElection,
   // approveCandidate,
@@ -18,6 +19,8 @@ router.post("/", isFacultyAuthority, createElection);
 router.get("/detail", studentAuthMiddleware, getElectionDetails)
 
 router.post("/vote", studentAuthMiddleware, isPasswordCorrect, validateSelfie, voteForElection);
+
+router.get("/", getElectionInfo)
 
 // Register as a candidate (Only students can register)
 // router.post("/:id/register", studentAuthMiddleware, registerForElection);

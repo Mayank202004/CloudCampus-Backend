@@ -14,7 +14,7 @@ export const createRequest = async (req, res) => {
     });
 
     const savedRequest = await newRequest.save();
-    res.status(201).json(savedRequest);
+    res.status(200).json(savedRequest);
   } catch (error) {
     res.status(500).json({ error: "Failed to create request", details: error.message });
   }

@@ -31,7 +31,7 @@ export const createFaculty = async (req, res) => {
     });
 
     await faculty.save();
-    res.status(201).json({ message: "Faculty created successfully", faculty });
+    res.status(200).json({ message: "Faculty created successfully", faculty });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
@@ -49,9 +49,6 @@ export const loginFaculty = async (req, res) => {
       return res.status(400).json({ message: 'Invalid email or password' });
     }
 
-    console.log(password)
-    console.log(faculty.password)
-
 
     const isMatch = await bcryptjs.compare(password, faculty.password);
 
@@ -64,8 +61,9 @@ export const loginFaculty = async (req, res) => {
     const token = jwt.sign(payload, process.env.JWT_SECRET_KEY);
 
     res.cookie("token", token)
+    res.cookie("role", "faculty")
 
-    res.status(200).send({ token });
+    res.status(200).send({ token, role: "faculty" });
 
   } catch (error) {
     res.status(500).send({ message: error.message })

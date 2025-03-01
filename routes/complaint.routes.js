@@ -16,7 +16,7 @@ router.post("/", studentAuthMiddleware, createComplaint);
 // Get all complaints (for admin or faculty handling complaints)
 router.get("/", studentAuthMiddleware, getAllComplaints);
 
-router.patch("/:complaintId", isFacultyAuthority, increaseAnonymousCount)
+router.patch("/approve/:complaintId", isFacultyAuthority, increaseAnonymousCount)
 
 // Get a single complaint by ID
 // router.get("/:id", studentAuthMiddleware, getComplaintById);

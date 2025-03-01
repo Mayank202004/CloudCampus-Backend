@@ -1,7 +1,7 @@
 {
   "name": "cloudcampus-backend",
   "version": "1.0.0",
-  "description": "",
+  "description": "<!-- delete cloudinary image -->\r <!-- get all complaints -->\r college leave email\r notification",
   "main": "index.js",
   "type": "module",
   "scripts": {
@@ -25,6 +25,8 @@
     "mongoose": "^8.10.1",
     "multer": "^1.4.5-lts.1",
     "nodemailer": "^6.10.0",
-    "nodemon": "^3.1.9"
+    "nodemon": "^3.1.9",
+    "path": "^0.12.7",
+    "puppeteer": "^24.2.1"
   }
 }
