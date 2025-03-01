@@ -3,11 +3,12 @@ import Application from "../models/application.models.js";
 import FacultyAuthority from "../models/facultyauthorities.models.js";
 import Student from "../models/student.models.js";
 import StudentAuthority from "../models/studentauthorities.models.js";
+import Notification from "../models/notification.models.js";
 
 // Create a new application
 export const createApplication = async (req, res) => {
   try {
-    const { title, to, body, file } = req.body;
+    const { title, to, body, file, receipantAuthorityType, priority } = req.body;
     const from = req.student._id;
 
     if (!title || !to || !body) {
@@ -24,14 +25,26 @@ export const createApplication = async (req, res) => {
       title,
       to: toData,
       body,
-      file
+      file: file ?? "",
+      priority: priority ?? "high"
     });
-
-
     await newApplication.save();
+
+    // Create notifications for each recipient
+    const notifications = to.map((authorityEmail) => ({
+      title: "New Application Received",
+      description: `You have received a new application: "${title}".`,
+      notifiedTo: authorityEmail, // Authority who will receive the notification (Storing Email)
+      from: from, // Student who applied
+      fromModel: receipantAuthorityType ?? "FacultyAuthority", // Assuming it's sent to faculty if not mentioned
+    }));
+
+    await Notification.insertMany(notifications);
+
     res.status(200).json({ message: "Application created successfully", application: newApplication });
 
   } catch (error) {
+    console.log(error);
     res.status(500).json({ message: error.message });
   }
 };

@@ -28,6 +28,11 @@ const ApplicationSchema = new mongoose.Schema(
     },
     file: {
       type: String
+    },
+    priority: {
+      type: String,
+      enum: ["low", "medium", "high"],
+      default: "high"
     }
   },
   { timestamps: true }
