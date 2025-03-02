@@ -87,35 +87,63 @@ export const getAllApplications = async (req, res) => {
 
 export const getStudentApplications = async (req, res) => {
   try {
-    let applications = await Application.find({ from: req.student._id });
+    let applications = await Application.find({ from: req.student._id }).lean();
 
     // Fetch 'from' and 'to' details manually
     applications = await Promise.all(
       applications.map(async (app) => {
-        const student = await Student.findOne({ _id: app.from }).select("name email");
-        const toEntities = await Promise.all(
-          app.to.map(async (toId) => {
-            const faculty = await FacultyAuthority.findOne({ _id: toId.authority }).populate("faculty");
-            if (faculty) return faculty.toObject();
+        const student = await Student.findById(app.from).select("name email").lean();
 
-            const studentAuth = await StudentAuthority.findOne({ _id: toId.authority }).populate("student");
-            return studentAuth ? studentAuth.toObject() : null;
+        const toEntities = await Promise.all(
+          app.to.map(async (entry) => {
+            const email = entry.authority; 
+            
+            const facultyAuthority = await FacultyAuthority.findOne({ email }).populate("faculty").lean();
+            if (facultyAuthority && facultyAuthority.faculty) {
+              return {
+                authority: entry.authority,
+                status: entry.status,
+                _id: entry._id, 
+                name: facultyAuthority.faculty.name || "Unknown",
+                registrationNo: facultyAuthority.faculty.registrationNo || "N/A", 
+                role: "Faculty Authority"
+              };
+            }
+
+            const studentAuthority = await StudentAuthority.findOne({ email }).populate("student").lean();
+            if (studentAuthority && studentAuthority.student) {
+              return {
+                authority: entry.authority,
+                status: entry.status,
+                _id: entry._id, 
+                name: studentAuthority.student.name || "Unknown", 
+                registrationNo: studentAuthority.student.registrationNo || "N/A", 
+                role: "Student Authority"
+              };
+            }
+            // Return the original object if no match is found
+            return {
+              authority: entry.authority,
+              status: entry.status,
+              _id: entry._id
+            };
           })
         );
-
         return {
-          ...app.toObject(),
-          from: student ? student.toObject() : null, // Convert from string to object
-          to: toEntities.filter(Boolean), // Remove null values
+          ...app, 
+          from: student ? student : null,
+          to: toEntities,
         };
       })
     );
 
-    res.status(200).json({ applications });
+    res.status(200).json(applications);
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    res.status(500).json({ error: "Server error", details: error.message });
   }
 };
+
+
 
 // Get applications addressed to a faculty or faculty authority
 export const getApplicationsForFaculty = async (req, res) => {
@@ -130,7 +158,7 @@ export const getApplicationsForFaculty = async (req, res) => {
         // Fetch `to` details
         const toEntities = await Promise.all(
           app.to.map(async (toId) => {
-            const faculty = await FacultyAuthority.findOne({ _id: toId.authority }).pupulate("faculty");
+            const faculty = await FacultyAuthority.findOne({ _id: toId.authority }).populate("faculty");
             if (faculty) return { authority: faculty.toObject(), status: toId.status };
 
             const studentAuth = await StudentAuthority.findOne({ _id: toId.authority }).populate("student");

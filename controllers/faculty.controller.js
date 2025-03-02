@@ -9,6 +9,10 @@ export const createFaculty = async (req, res) => {
   try {
     const { registrationNo, name, email, password, department, phone } = req.body;
 
+    if (!password || typeof password !== "string") {
+      return res.status(400).json({ message: "Invalid or missing password" });
+    }
+
     // Check if faculty with email or registrationNo already exists
     const existingFaculty = await Faculty.findOne({ 
       $or: [{ email }, { registrationNo }] 
@@ -34,6 +38,7 @@ export const createFaculty = async (req, res) => {
     res.status(200).json({ message: "Faculty created successfully", faculty });
   } catch (error) {
     res.status(500).json({ message: error.message });
+    console.log(error);
   }
 };
 
