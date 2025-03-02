@@ -113,7 +113,7 @@ export const updateBloodGroup = async (req, res) => {
 
 
 // @desc Update student details (mobile number)
-// @route PUT /api/students/phone 
+// @route PUT /api/students/updatephone 
 export const updatePhoneNumber = async (req, res) => {
   try {
     const { phone } = req.body;
@@ -139,7 +139,7 @@ export const updatePhoneNumber = async (req, res) => {
 };
 
 // @desc Update student details (address)
-// @route PUT /api/students/address 
+// @route PUT /api/students/updateaddress 
 export const updateAddress = async (req, res) => {
   try {
     const { address } = req.body;
