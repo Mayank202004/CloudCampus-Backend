@@ -1,5 +1,6 @@
 import { generateLetterHTML } from "../config/letterTemplate.js";
 import Application from "../models/application.models.js";
+import Faculty from "../models/faculty.models.js";
 import FacultyAuthority from "../models/facultyauthorities.models.js";
 import Student from "../models/student.models.js";
 import StudentAuthority from "../models/studentauthorities.models.js";
@@ -9,12 +10,12 @@ export const createApplication = async (req, res) => {
   try {
     const { title, to, body, file } = req.body;
     const from = req.student._id;
+    console.log(req.body);
 
     if (!title || !to || !body) {
       return res.status(400).json({ message: "Title, to and body are required" });
     }
     let toData = [];
-
     for (let id of to) {
       toData.push({ authority: id, status: "pending" })
     }
@@ -24,7 +25,8 @@ export const createApplication = async (req, res) => {
       title,
       to: toData,
       body,
-      file
+      file,
+      isApproved: false
     });
 
 
@@ -67,6 +69,15 @@ export const getAllApplications = async (req, res) => {
     );
 
     res.status(200).json({ applications });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+export const getAllApplicationSenders = async (req, res) => {
+  try {
+    const faculties = await Faculty.find().select("name email");
+    res.status(200).json({ faculties });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
