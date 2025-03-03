@@ -15,3 +15,88 @@
   "department":"Electronics & Telecommunication Engineering",
   "signature": "https://example.com/signature.png"
 }
+
+{
+  "faculty": "67c5d599c4f2eff6a3425729",
+  "email": "librarian@sggs.ac.in",
+  "password": "12456",
+  "position": "I/C Librariant",
+  "signature": "https://example.com/signature.png"
+}
+
+{
+  "faculty": "67c5d6d5c4f2eff6a342572f",
+  "email": "srclerk.librarian@sggs.ac.in",
+  "password": "12456",
+  "position": "Sr. Clerk",
+  "signature": "https://example.com/signature.png"
+}
+
+{
+  "faculty": "67c5d80dc4f2eff6a3425735",
+  "email": "it.admin@sggs.ac.in",
+  "password": "12456",
+  "position": "IT Technical Admin",
+  "signature": "https://example.com/signature.png"
+}
+
+{
+  "faculty": "67c5d899c4f2eff6a342573b",
+  "email": "tech.support@sggs.ac.in",
+  "password": "12456",
+  "position": "Technical Support",
+  "signature": "https://example.com/signature.png"
+}
+
+{
+  "faculty": "67c5d951c4f2eff6a342574b",
+  "email": "warden.boys@sggs.ac.in",
+  "password": "12456",
+  "position": "Boys Hostel Warden",
+  "signature": "https://example.com/signature.png"
+}
+
+{
+  "faculty": "67c5d9cec4f2eff6a3425751",
+  "email": "warden.girls@sggs.ac.in",
+  "password": "12456",
+  "position": "Girls Hostel Warden",
+  "signature": "https://example.com/signature.png"
+}
+
+{
+  "faculty": "67c5daabc4f2eff6a3425757",
+  "email": "dean.sa@sggs.ac.in",
+  "password": "12456",
+  "position": "Dean Students Affair",
+  "signature": "https://example.com/signature.png"
+}
+
+{
+  "faculty": "67c5db1ac4f2eff6a342575d",
+  "email": "cultural@sggs.ac.in",
+  "password": "12456",
+  "position": "Cultural Coordinator",
+  "signature": "https://example.com/signature.png"
+}
+
+{
+  "faculty": "67c5dc18c4f2eff6a3425763",
+  "email": "lab.cse@sggs.ac.in",
+  "password": "12456",
+  "position": "CSE Lab Incharge",
+  "department":"Computer Science & Engineering",
+  "signature": "https://example.com/signature.png"
+}
+
+{
+  "faculty": "67c5dcd9c4f2eff6a342576c",
+  "email": "lab.it@sggs.ac.in",
+  "password": "12456",
+  "position": "IT Lab Incharge",
+  "department":"Information Technology",
+  "signature": "https://example.com/signature.png"
+}
+
+
+
