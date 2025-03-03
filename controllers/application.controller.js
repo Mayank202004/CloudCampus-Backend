@@ -275,40 +275,52 @@ export const generateApplication = async (req, res) => {
 
 export const getApplicationPrint = async (req, res) => {
   try {
-      const app = await Application.findById(req.params.applicationId);
-      if (!app) {
-          return res.status(404).send("Application not found");
-      }
+    const app = await Application.findById(req.params.applicationId);
+    if (!app) {
+      return res.status(404).send("Application not found");
+    }
 
-      if (app.to.some(receipent => receipent.status !== "approved")) {
-        return res.status(403).send({ message: "Applications not approved yet" });
-      }
-      
+    if (app.to.some(receipent => receipent.status !== "approved")) {
+      return res.status(403).send({ message: "Applications not approved yet" });
+    }
 
-      // Fetch `from` details
-      const fromEntity = await Student.findById(app.from).select("name email");
+    // Fetch `from` details
+    const fromEntity = await Student.findById(app.from).select("name email registrationNo");
 
-      // Fetch `to` details
-      const toEntities = await Promise.all(
-          app.to.map(async (toId) => {
-              const faculty = await FacultyAuthority.findById(toId.authority).populate("faculty");
-              if (faculty) return faculty.toObject();
-              const studentAuth = await StudentAuthority.findById(toId.authority).populate("student");
-              return studentAuth ? studentAuth.toObject() : null;
-          })
-      );
+    // Fetch `to` details properly
+    const toEntities = await Promise.all(
+      app.to.map(async (toId) => {
+        let recipient = null;
 
-      const applicationData = {
-          ...app.toObject(),
-          from: fromEntity ? fromEntity.toObject() : null,
-          to: toEntities.filter(Boolean), 
-      };
+        // Check if authority is an email or an ObjectId
+        if (toId.authority.includes("@")) {
+          recipient = await FacultyAuthority.findOne({ email: toId.authority }).populate("faculty");
+          if (!recipient) {
+            recipient = await StudentAuthority.findOne({ email: toId.authority }).populate("student");
+          }
+        } else {
+          recipient = await FacultyAuthority.findById(toId.authority).populate("faculty");
+          if (!recipient) {
+            recipient = await StudentAuthority.findById(toId.authority).populate("student");
+          }
+        }
 
-      // Generate HTML content
-      const htmlContent = generateLetterHTML(applicationData);
-      res.send(htmlContent);
+        return recipient ? { ...recipient.toObject(), status: toId.status } : null;
+      })
+    );
+
+    const applicationData = {
+      ...app.toObject(),
+      from: fromEntity ? fromEntity.toObject() : null,
+      to: toEntities.filter(Boolean), // Remove any null values
+    };
+
+    // Generate HTML content
+    console.log(applicationData);
+    const htmlContent = generateLetterHTML(applicationData);
+    res.send(htmlContent);
   } catch (error) {
-      console.error("Printing application:", error);
-      res.status(500).send("Internal Server Error");
+    console.error("Printing application:", error);
+    res.status(500).send("Internal Server Error");
   }
-}
+};
