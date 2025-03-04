@@ -21,8 +21,10 @@ const FacultyAuthoritiesSchema = new mongoose.Schema(
       trim: true,
     },
     role: {
-      type: String,
-      required: true
+      type: String
+    },
+    department: {
+      type: String
     },
     signature: {
       type: String

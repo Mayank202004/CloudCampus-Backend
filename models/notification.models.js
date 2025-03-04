@@ -12,15 +12,13 @@ const NotificationSchema = new mongoose.Schema(
       trim: true,
     },
     notifiedTo: {
+      type: String,
+    },
+    from: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Student',
       required: true,
       trim: true,
-    },
-    from: {
-      type: mongoose.Schema.Types.ObjectId,
-      // required: true,
-      refPath: "fromModel",
     },
     fromModel: {
       type: String,

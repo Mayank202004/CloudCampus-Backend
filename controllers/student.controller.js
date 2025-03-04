@@ -85,8 +85,8 @@ export const updateStudent = async (req, res) => {
   }
 };
 
-// @desc Update student details
-// @route PUT /api/students//updatebloodgroup 
+// @desc Update student details (bloodgroup)
+// @route PUT /api/students/updatebloodgroup 
 export const updateBloodGroup = async (req, res) => {
   try {
     const { bloodGroup } = req.body;
@@ -110,6 +110,61 @@ export const updateBloodGroup = async (req, res) => {
     res.status(500).json({ message: "Server error", error: error.message });
   }
 };
+
+
+// @desc Update student details (mobile number)
+// @route PUT /api/students/updatephone 
+export const updatePhoneNumber = async (req, res) => {
+  try {
+    const { phone } = req.body;
+
+    if (!phone) {
+      return res.status(400).json({ message: "Phone number is required." });
+    }
+
+    // Update only the phone field
+    await Student.findByIdAndUpdate(req.student._id, { phone });
+
+    // Fetch the updated student details
+    const student = await Student.findById(req.student._id);
+
+    if (!student) {
+      return res.status(404).json({ message: "Student not found." });
+    }
+
+    res.status(200).json({ message: "Phone number updated successfully", student });
+  } catch (error) {
+    res.status(500).json({ message: "Server error", error: error.message });
+  }
+};
+
+// @desc Update student details (address)
+// @route PUT /api/students/updateaddress 
+export const updateAddress = async (req, res) => {
+  try {
+    const { address } = req.body;
+
+    if (!address) {
+      return res.status(400).json({ message: "Address is required." });
+    }
+
+    // Update only the address field and return the updated document
+    const student = await Student.findByIdAndUpdate(
+      req.student._id, 
+      { address }, 
+      { new: true } // Ensures updated document is returned
+    );
+
+    if (!student) {
+      return res.status(404).json({ message: "Student not found." });
+    }
+
+    res.status(200).json({ message: "Address updated successfully", student });
+  } catch (error) {
+    res.status(500).json({ message: "Server error", error: error.message });
+  }
+};
+
 
 
 

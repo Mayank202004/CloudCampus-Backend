@@ -6,14 +6,28 @@ import jwt from "jsonwebtoken"
 // Create a new Faculty Authority
 export const createFacultyAuthority = async (req, res) => {
   try {
-    const { faculty, position } = req.body;
+    const { faculty, email, password, position, signature, department} = req.body; 
 
-    // Validate required fields
-    if (!faculty || !position) {
-      return res.status(400).json({ message: "Faculty and position are required." });
+    if (!faculty || !email || !password || !position) {
+      return res.status(400).json({ message: "Faculty ID, email, password, and position are required." });
     }
 
-    const newAuthority = new FacultyAuthority({ faculty, position });
+    const existingAuthority = await FacultyAuthority.findOne({ email });
+    if (existingAuthority) {
+      return res.status(400).json({ message: "A faculty authority with this email already exists." });
+    }
+
+    const hashedPassword = await bcryptjs.hash(password, 10);
+
+    const newAuthority = new FacultyAuthority({ 
+      faculty,
+      email, 
+      password: hashedPassword, 
+      position,
+      department,
+      signature 
+    });
+
     await newAuthority.save();
 
     res.status(200).json({ message: "Faculty authority created successfully", data: newAuthority });
@@ -21,6 +35,7 @@ export const createFacultyAuthority = async (req, res) => {
     res.status(500).json({ message: "Error creating faculty authority", error: error.message });
   }
 };
+
 
 // Get all Faculty Authorities
 export const getFacultyAuthorities = async (req, res) => {

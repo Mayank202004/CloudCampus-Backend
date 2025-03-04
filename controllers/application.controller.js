@@ -4,11 +4,12 @@ import Faculty from "../models/faculty.models.js";
 import FacultyAuthority from "../models/facultyauthorities.models.js";
 import Student from "../models/student.models.js";
 import StudentAuthority from "../models/studentauthorities.models.js";
+import Notification from "../models/notification.models.js";
 
 // Create a new application
 export const createApplication = async (req, res) => {
   try {
-    const { title, to, body, file } = req.body;
+    const { title, to, body, file, receipantAuthorityType, priority } = req.body;
     const from = req.student._id;
     console.log(req.body);
 
@@ -25,15 +26,27 @@ export const createApplication = async (req, res) => {
       title,
       to: toData,
       body,
-      file,
+      file: file ?? "",
+      priority: priority ?? "high"
       isApproved: false
     });
-
-
     await newApplication.save();
+
+    // Create notifications for each recipient
+    const notifications = to.map((authorityEmail) => ({
+      title: "New Application Received",
+      description: `You have received a new application: "${title}".`,
+      notifiedTo: authorityEmail, // Authority who will receive the notification (Storing Email)
+      from: from, // Student who applied
+      fromModel: receipantAuthorityType ?? "FacultyAuthority", // Assuming it's sent to faculty if not mentioned
+    }));
+
+    await Notification.insertMany(notifications);
+
     res.status(200).json({ message: "Application created successfully", application: newApplication });
 
   } catch (error) {
+    console.log(error);
     res.status(500).json({ message: error.message });
   }
 };
@@ -85,35 +98,63 @@ export const getAllApplicationSenders = async (req, res) => {
 
 export const getStudentApplications = async (req, res) => {
   try {
-    let applications = await Application.find({ from: req.student._id });
+    let applications = await Application.find({ from: req.student._id }).lean();
 
     // Fetch 'from' and 'to' details manually
     applications = await Promise.all(
       applications.map(async (app) => {
-        const student = await Student.findOne({ _id: app.from }).select("name email");
-        const toEntities = await Promise.all(
-          app.to.map(async (toId) => {
-            const faculty = await FacultyAuthority.findOne({ _id: toId.authority }).populate("faculty");
-            if (faculty) return faculty.toObject();
+        const student = await Student.findById(app.from).select("name email").lean();
 
-            const studentAuth = await StudentAuthority.findOne({ _id: toId.authority }).populate("student");
-            return studentAuth ? studentAuth.toObject() : null;
+        const toEntities = await Promise.all(
+          app.to.map(async (entry) => {
+            const email = entry.authority; 
+            
+            const facultyAuthority = await FacultyAuthority.findOne({ email }).populate("faculty").lean();
+            if (facultyAuthority && facultyAuthority.faculty) {
+              return {
+                authority: entry.authority,
+                status: entry.status,
+                _id: entry._id, 
+                name: facultyAuthority.faculty.name || "Unknown",
+                registrationNo: facultyAuthority.faculty.registrationNo || "N/A", 
+                role: "Faculty Authority"
+              };
+            }
+
+            const studentAuthority = await StudentAuthority.findOne({ email }).populate("student").lean();
+            if (studentAuthority && studentAuthority.student) {
+              return {
+                authority: entry.authority,
+                status: entry.status,
+                _id: entry._id, 
+                name: studentAuthority.student.name || "Unknown", 
+                registrationNo: studentAuthority.student.registrationNo || "N/A", 
+                role: "Student Authority"
+              };
+            }
+            // Return the original object if no match is found
+            return {
+              authority: entry.authority,
+              status: entry.status,
+              _id: entry._id
+            };
           })
         );
-
         return {
-          ...app.toObject(),
-          from: student ? student.toObject() : null, // Convert from string to object
-          to: toEntities.filter(Boolean), // Remove null values
+          ...app, 
+          from: student ? student : null,
+          to: toEntities,
         };
       })
     );
 
-    res.status(200).json({ applications });
+    res.status(200).json(applications);
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    res.status(500).json({ error: "Server error", details: error.message });
   }
 };
+
+
 
 // Get applications addressed to a faculty or faculty authority
 export const getApplicationsForFaculty = async (req, res) => {
@@ -128,7 +169,7 @@ export const getApplicationsForFaculty = async (req, res) => {
         // Fetch `to` details
         const toEntities = await Promise.all(
           app.to.map(async (toId) => {
-            const faculty = await FacultyAuthority.findOne({ _id: toId.authority }).pupulate("faculty");
+            const faculty = await FacultyAuthority.findOne({ _id: toId.authority }).populate("faculty");
             if (faculty) return { authority: faculty.toObject(), status: toId.status };
 
             const studentAuth = await StudentAuthority.findOne({ _id: toId.authority }).populate("student");
@@ -245,40 +286,52 @@ export const generateApplication = async (req, res) => {
 
 export const getApplicationPrint = async (req, res) => {
   try {
-      const app = await Application.findById(req.params.applicationId);
-      if (!app) {
-          return res.status(404).send("Application not found");
-      }
+    const app = await Application.findById(req.params.applicationId);
+    if (!app) {
+      return res.status(404).send("Application not found");
+    }
 
-      if (app.to.some(receipent => receipent.status !== "approved")) {
-        return res.status(403).send({ message: "Applications not approved yet" });
-      }
-      
+    if (app.to.some(receipent => receipent.status !== "approved")) {
+      return res.status(403).send({ message: "Applications not approved yet" });
+    }
 
-      // Fetch `from` details
-      const fromEntity = await Student.findById(app.from).select("name email");
+    // Fetch `from` details
+    const fromEntity = await Student.findById(app.from).select("name email registrationNo");
 
-      // Fetch `to` details
-      const toEntities = await Promise.all(
-          app.to.map(async (toId) => {
-              const faculty = await FacultyAuthority.findById(toId.authority).populate("faculty");
-              if (faculty) return faculty.toObject();
-              const studentAuth = await StudentAuthority.findById(toId.authority).populate("student");
-              return studentAuth ? studentAuth.toObject() : null;
-          })
-      );
+    // Fetch `to` details properly
+    const toEntities = await Promise.all(
+      app.to.map(async (toId) => {
+        let recipient = null;
 
-      const applicationData = {
-          ...app.toObject(),
-          from: fromEntity ? fromEntity.toObject() : null,
-          to: toEntities.filter(Boolean), 
-      };
+        // Check if authority is an email or an ObjectId
+        if (toId.authority.includes("@")) {
+          recipient = await FacultyAuthority.findOne({ email: toId.authority }).populate("faculty");
+          if (!recipient) {
+            recipient = await StudentAuthority.findOne({ email: toId.authority }).populate("student");
+          }
+        } else {
+          recipient = await FacultyAuthority.findById(toId.authority).populate("faculty");
+          if (!recipient) {
+            recipient = await StudentAuthority.findById(toId.authority).populate("student");
+          }
+        }
 
-      // Generate HTML content
-      const htmlContent = generateLetterHTML(applicationData);
-      res.send(htmlContent);
+        return recipient ? { ...recipient.toObject(), status: toId.status } : null;
+      })
+    );
+
+    const applicationData = {
+      ...app.toObject(),
+      from: fromEntity ? fromEntity.toObject() : null,
+      to: toEntities.filter(Boolean), // Remove any null values
+    };
+
+    // Generate HTML content
+    console.log(applicationData);
+    const htmlContent = generateLetterHTML(applicationData);
+    res.send(htmlContent);
   } catch (error) {
-      console.error("Printing application:", error);
-      res.status(500).send("Internal Server Error");
+    console.error("Printing application:", error);
+    res.status(500).send("Internal Server Error");
   }
-}
+};
