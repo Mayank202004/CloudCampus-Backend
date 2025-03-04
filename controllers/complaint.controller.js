@@ -1,20 +1,22 @@
 import Complaint from "../models/complaint.models.js";
+import Faculty from "../models/faculty.models.js";
 
 // @desc    Create a new complaint
 // @route   POST /api/complaints
 // @access  Private (only students)
 export const createComplaint = async (req, res) => {
     try {
-        const { title, complaintTo, description, attachments } = req.body;
+        const { title, to, body, file } = req.body;
         const studentId = req.student._id; // Extract student from request
+        console.log(req.body);
 
         const complaint = new Complaint({
             title,
-            complaintTo,
-            description,
+            complaintTo: to,
+            description: body,
             student: studentId,
             keepAnonymousCount: 0,
-            attachments,
+            attachments: file,
         });
 
         await complaint.save();
@@ -41,6 +43,15 @@ export const getAllComplaints = async (req, res) => {
         })
 
         res.status(200).json(complaints);
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};
+
+export const getAllComplaintSenders = async (req, res) => {
+    try {
+        const faculties = await Faculty.find().select("name email");
+        res.status(200).json({ faculties });
     } catch (error) {
         res.status(500).json({ message: error.message });
     }
