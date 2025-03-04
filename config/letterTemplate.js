@@ -98,6 +98,7 @@ export function generateLetterHTML(application) {
                 <p>${application.body}</p>
                 <p>Sincerely,</p>
                 <p><strong>${application.from.name}</strong></p>
+                <p><strong>${application.from.registrationNo}</strong></p>
                <!--- <img src=${application.from.signature} alt="Signature 1"> --->
             </div>
 
