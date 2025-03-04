@@ -27,7 +27,7 @@ export const createApplication = async (req, res) => {
       to: toData,
       body,
       file: file ?? "",
-      priority: priority ?? "high"
+      priority: priority ?? "high",
       isApproved: false
     });
     await newApplication.save();
