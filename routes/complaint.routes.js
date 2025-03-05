@@ -4,6 +4,7 @@ import {
   getAllComplaints,
 //   getComplaintById,
   deleteComplaint,
+  getAllComplaintSenders,
   increaseAnonymousCount,
 } from "../controllers/complaint.controller.js";
 import { studentAuthMiddleware, isFacultyAuthority } from "../middlewares/auth.js";
@@ -15,6 +16,7 @@ router.post("/", studentAuthMiddleware, createComplaint);
 
 // Get all complaints (for admin or faculty handling complaints)
 router.get("/", studentAuthMiddleware, getAllComplaints);
+router.get("/senders", studentAuthMiddleware, getAllComplaintSenders);
 
 router.patch("/approve/:complaintId", isFacultyAuthority, increaseAnonymousCount)
 
