@@ -82,7 +82,7 @@ export function generateLetterHTML(application) {
                 <p>To,</p>
                 ${application.to.map(recipient => `
                     <p><strong>${recipient.faculty?.name}</strong></p>
-                    <p>${recipient.position}, ${recipient.faculty?.department}</p>
+                    <p>${recipient.position}, ${recipient.faculty?.department ? `, ${recipient.faculty.department}` : ''}</p>
                     <p>${recipient.faculty?.email}</p>
                 `).join('')}
             </div>

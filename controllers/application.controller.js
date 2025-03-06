@@ -327,7 +327,7 @@ export const getApplicationPrint = async (req, res) => {
     };
 
     // Generate HTML content
-    console.log(applicationData);
+    // console.log(applicationData);
     const htmlContent = generateLetterHTML(applicationData);
     res.send(htmlContent);
   } catch (error) {
