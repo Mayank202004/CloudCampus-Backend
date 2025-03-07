@@ -27,7 +27,7 @@ export const createApplication = async (req, res) => {
       to: toData,
       body,
       file: file ?? "",
-      priority: priority ?? "high"
+      priority: priority ?? "high",
       isApproved: false
     });
     await newApplication.save();
@@ -50,6 +50,58 @@ export const createApplication = async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 };
+
+// @Desc Update (Reapply) an existing application
+// @Route /applications/reapply (Patch request)
+// @Access Protected (Students only)
+export const reapplyApplication = async (req, res) => {
+  try {
+    const { applicationId, title, body, file } = req.body;
+
+    if (!applicationId || !title || !body) {
+      return res.status(400).json({ message: "Application ID, title, and body are required" });
+    }
+
+    const application = await Application.findById(applicationId);
+    if (!application) {
+      return res.status(404).json({ message: "Application not found" });
+    }
+
+    // Update only allowed fields
+    application.title = title;
+    application.body = body;
+    application.reason = "";
+    application.file = file ?? application.file;
+    
+    // Reset recipient statuses
+    application.to.forEach((recipient) => {
+      recipient.status = "pending";
+    });
+
+    await application.save();
+
+    // Extract recipient emails
+    const recipientEmails = application.to.map((recipient) => recipient.authority); // Extracting only email
+
+    // Send notifications again to all recipients
+    const notifications = recipientEmails.map((authorityEmail) => ({
+      title: "Application Re-Applied",
+      description: `A re-applied application requires your review: "${title}".`,
+      notifiedTo: authorityEmail, // Authority email
+      from: req.student._id, // Student who re-applied
+      fromModel: "FacultyAuthority",
+    }));
+
+    await Notification.insertMany(notifications);
+
+    res.status(200).json({ message: "Application re-applied successfully", application });
+
+  } catch (error) {
+    console.log(error);
+    res.status(500).json({ message: error.message });
+  }
+};
+
 
 // Get all applications (visible to all students)
 export const getAllApplications = async (req, res) => {

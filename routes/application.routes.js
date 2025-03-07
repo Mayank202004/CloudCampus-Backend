@@ -1,5 +1,5 @@
 import express from "express";
-import { getAllApplications, getAllApplicationSenders, getStudentApplications, getApplicationsForFaculty, createApplication, approveApplication, rejectApplication, generateApplication, getApplicationPrint } from "../controllers/application.controller.js";
+import { getAllApplications, getAllApplicationSenders, getStudentApplications, getApplicationsForFaculty, createApplication, approveApplication, rejectApplication, generateApplication, getApplicationPrint, reapplyApplication } from "../controllers/application.controller.js";
 import { facultyAuthMiddleware, isFacultyAuthority, studentAuthMiddleware } from "../middlewares/auth.js";
 
 const router = express.Router();
@@ -8,6 +8,8 @@ router.use(express.static("public"));
 
 
 router.post("/", studentAuthMiddleware, createApplication);
+router.post("/", studentAuthMiddleware, createApplication);
+router.patch("/reapply", studentAuthMiddleware,reapplyApplication);
 router.get("/all", facultyAuthMiddleware, getAllApplications);
 router.get("/senders", studentAuthMiddleware, getAllApplicationSenders);
 router.get("/my-applications", studentAuthMiddleware, getStudentApplications);
