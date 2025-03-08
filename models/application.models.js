@@ -16,9 +16,16 @@ const ApplicationSchema = new mongoose.Schema(
       },
       status: {
         type: String,
-        enum: ["approved", "rejected", "pending"]
+        enum: ["approved", "rejected", "pending","returned back to applicant"]
       }
     }],
+    reason: {
+      type: String,
+      required: function () {
+        return this.status === "rejected" || this.status === "returned back to applicant";
+      },
+      default: ""
+    },
     isApproved: {
       type: Boolean,
 
