@@ -208,25 +208,22 @@ export const getStudentApplications = async (req, res) => {
 
 
 
-// Get applications addressed to a faculty or faculty authority
 export const getApplicationsForFaculty = async (req, res) => {
   try {
-    const facultyEmail = req.authorityFaculty.email;
+    const facultyEmail = req.faculty.email;
 
     // Fetch only applications where at least one `to` entry matches the faculty email and has status "pending"
     let applications = await Application.find({
       "to": { $elemMatch: { authority: facultyEmail, status: "pending" } }
-    }).lean(); // Use `.lean()` to optimize query performance
+    }).lean(); 
 
     applications = await Promise.all(
       applications.map(async (app) => {
         const student = await Student.findById(app.from).select("name email").lean();
 
-        // Filter `to` entries to only include the ones matching the faculty email and pending status
-        const relevantToEntries = app.to.filter(entry => entry.authority === facultyEmail && entry.status === "pending");
-
+        // No need to filter again, just process `app.to`
         const toEntities = await Promise.all(
-          relevantToEntries.map(async (entry) => {
+          app.to.map(async (entry) => {
             const email = entry.authority;
 
             // Check faculty authority
@@ -277,6 +274,7 @@ export const getApplicationsForFaculty = async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 };
+
 
 
 
