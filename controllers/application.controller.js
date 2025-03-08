@@ -211,28 +211,63 @@ export const getStudentApplications = async (req, res) => {
 // Get applications addressed to a faculty or faculty authority
 export const getApplicationsForFaculty = async (req, res) => {
   try {
-    let applications = await Application.find({ "to.authority": req.authorityFaculty._id });
+    const facultyEmail = req.authorityFaculty.email;
+
+    // Fetch only applications where at least one `to` entry matches the faculty email and has status "pending"
+    let applications = await Application.find({
+      "to": { $elemMatch: { authority: facultyEmail, status: "pending" } }
+    }).lean(); // Use `.lean()` to optimize query performance
 
     applications = await Promise.all(
       applications.map(async (app) => {
-        // Fetch `from` details
-        const fromEntity = await Student.findOne({ _id: app.from }).select("name email");
+        const student = await Student.findById(app.from).select("name email").lean();
 
-        // Fetch `to` details
+        // Filter `to` entries to only include the ones matching the faculty email and pending status
+        const relevantToEntries = app.to.filter(entry => entry.authority === facultyEmail && entry.status === "pending");
+
         const toEntities = await Promise.all(
-          app.to.map(async (toId) => {
-            const faculty = await FacultyAuthority.findOne({ _id: toId.authority }).populate("faculty");
-            if (faculty) return { authority: faculty.toObject(), status: toId.status };
+          relevantToEntries.map(async (entry) => {
+            const email = entry.authority;
 
-            const studentAuth = await StudentAuthority.findOne({ _id: toId.authority }).populate("student");
-            return studentAuth ? { authority: studentAuth.toObject(), status: toId.status } : null;
+            // Check faculty authority
+            const facultyAuthority = await FacultyAuthority.findOne({ email }).populate("faculty").lean();
+            if (facultyAuthority?.faculty) {
+              return {
+                authority: email,
+                status: entry.status,
+                _id: entry._id,
+                name: facultyAuthority.faculty.name || "Unknown",
+                registrationNo: facultyAuthority.faculty.registrationNo || "N/A",
+                role: "Faculty Authority"
+              };
+            }
+
+            // Check student authority
+            const studentAuthority = await StudentAuthority.findOne({ email }).populate("student").lean();
+            if (studentAuthority?.student) {
+              return {
+                authority: email,
+                status: entry.status,
+                _id: entry._id,
+                name: studentAuthority.student.name || "Unknown",
+                registrationNo: studentAuthority.student.registrationNo || "N/A",
+                role: "Student Authority"
+              };
+            }
+
+            // Default fallback if no authority found
+            return {
+              authority: email,
+              status: entry.status,
+              _id: entry._id
+            };
           })
         );
 
         return {
-          ...app.toObject(),
-          from: fromEntity ? fromEntity.toObject() : null, // Convert `from` to object
-          to: toEntities.filter(Boolean), // Remove null values
+          ...app,
+          from: student || null,
+          to: toEntities
         };
       })
     );
@@ -242,6 +277,8 @@ export const getApplicationsForFaculty = async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 };
+
+
 
 export const approveApplication = async (req, res) => {
   try {
