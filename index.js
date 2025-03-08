@@ -12,7 +12,7 @@ import studentAuthorityRoutes from "./routes/studentauthorities.routes.js"
 import facultyAuthorityRoutes from "./routes/facultyauthorities.routes.js"
 import appointmentRoutes from "./routes/appointment.routes.js"
 import applicationRoutes from "./routes/application.routes.js"
-
+import receipantRoutes from "./routes/receipant.routes.js";
 import connectDB from "./config/db.js";
 import { upload } from "./middlewares/multer.js";
 import { deleteImage, imageUpload } from "./controllers/upload.js";
@@ -202,6 +202,7 @@ app.use("/api/faculty-authorities", facultyAuthorityRoutes);
 app.use('/api/healthleaves', healthLeaveRoutes)
 app.use('/api/applications', applicationRoutes)
 app.use('/api/appointments', appointmentRoutes)
+app.use("/api/receipants", receipantRoutes);
 
 // Start server
 app.listen(PORT, '0.0.0.0', () => {
