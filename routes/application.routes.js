@@ -15,8 +15,8 @@ router.get("/senders", studentAuthMiddleware, getAllApplicationSenders);
 router.get("/my-applications", studentAuthMiddleware, getStudentApplications);
 router.get("/applications-for-approval", facultyOrAuthorityMiddleware, getApplicationsForApproval);
 router.get("/my-authority-applications", facultyOrAuthorityMiddleware, getAllAuthorityApplications);
-router.patch("/approve/:applicationId", isFacultyAuthority, approveApplication);
-router.patch("/reject/:applicationId", isFacultyAuthority, rejectApplication);
+router.patch("/approve/:applicationId", facultyOrAuthorityMiddleware, approveApplication);
+router.patch("/reject/:applicationId", facultyOrAuthorityMiddleware, rejectApplication);
 router.get("/priint/:applicationId", studentAuthMiddleware, generateApplication);
 router.get("/generate-html/:applicationId", getApplicationPrint);
 

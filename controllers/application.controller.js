@@ -35,15 +35,16 @@ export const createApplication = async (req, res) => {
     await newApplication.save();
 
     // Create notifications for each recipient
-    const notifications = to.map((authorityEmail) => ({
+    const notification = new Notification({
       title: "New Application Received",
       description: `You have received a new application: "${title}".`,
-      notifiedTo: authorityEmail, // Authority who will receive the notification (Storing Email)
+      notifiedTo: to[0].authority, // Only the first authority receives the notification
       from: from, // Student who applied
-      fromModel: receipantAuthorityType ?? "FacultyAuthority", // Assuming it's sent to faculty if not mentioned
-    }));
-
-    await Notification.insertMany(notifications);
+      fromModel: receipantAuthorityType ?? "FacultyAuthority", // Default to FacultyAuthority if not mentioned
+    });
+    
+    await notification.save();
+    
 
     res.status(200).json({ message: "Application created successfully", application: newApplication });
 
@@ -87,16 +88,16 @@ export const reapplyApplication = async (req, res) => {
     // Extract recipient emails
     const recipientEmails = application.to.map((recipient) => recipient.authority); // Extracting only email
 
-    // Send notifications again to all recipients
-    const notifications = recipientEmails.map((authorityEmail) => ({
-      title: "Application Re-Applied",
-      description: `A re-applied application requires your review: "${title}".`,
-      notifiedTo: authorityEmail, // Authority email
-      from: req.student._id, // Student who re-applied
-      fromModel: "FacultyAuthority",
-    }));
-
-    await Notification.insertMany(notifications);
+    // Send notifications again to first authority
+    const notification = new Notification({
+      title: "New Application Received",
+      description: `You have received a new application: "${title}".`,
+      notifiedTo: to[0].authority, // Only the first authority receives the notification
+      from: from, // Student who applied
+      fromModel: receipantAuthorityType ?? "FacultyAuthority", // Default to FacultyAuthority if not mentioned
+    });
+    await notification.save();
+    
 
     res.status(200).json({ message: "Application re-applied successfully", application });
 
@@ -354,35 +355,94 @@ export const getAllAuthorityApplications = async (req, res) => {
 
 export const approveApplication = async (req, res) => {
   try {
+    const facultyEmail = req.authority.email; 
+
     let application = await Application.findById(req.params.applicationId);
 
     if (!application) {
       return res.status(404).json({ message: "Application not found" });
     }
 
-    let facultyId = req.authorityFaculty._id;
-    let updated = false;
+    // Check if already approved
+    if (application.isApproved) {
+      return res.status(400).json({ message: "Application is already fully approved." });
+    }
 
-    // Update the status
-    application.to.forEach((toObj) => {
-      if (toObj.authority.toString() === facultyId.toString()) {
-        toObj.status = "approved";
+    // Check if the current recipient matches the faculty email
+    if (application.currentRecipient !== facultyEmail) {
+      return res.status(403).json({ message: "Unauthorized: You cannot approve this application" });
+    }
+
+    let updated = false;
+    let currentIndex = -1;
+
+    for (let i = 0; i < application.to.length; i++) {
+      if (application.to[i].authority === facultyEmail) {
+        application.to[i].status = "approved";
         updated = true;
+        currentIndex = i;
+        break;
       }
-    });
+    }
 
     if (!updated) {
       return res.status(403).json({ message: "Unauthorized: You cannot approve this application" });
     }
 
-    // Save the changes to the database
-    await application.save();
+    let notifications = [];
+
+    // Check if all `to` authorities have approved
+    if (currentIndex === application.to.length - 1) {
+      application.isApproved = true;
+      application.currentRecipient = ""; // No more recipients
+
+      // Notify the student about full approval
+      notifications.push({
+        title: "Application Fully Approved",
+        description: `Your application titled "${application.title}" has been fully approved.`,
+        notifiedTo: application.from, 
+        from: facultyEmail, // The last approving authority
+      });
+
+    } else {
+      // Set currentRecipient to the next approver
+      application.currentRecipient = application.to[currentIndex + 1].authority;
+
+      // Notify the next authority for approval
+      notifications.push({
+        title: "New Application Received",
+        description: `You have received a new application: "${application.title}". Please review it.`,
+        notifiedTo: application.to[currentIndex + 1].authority,
+        from: application.from, // Student who applied
+      });
+
+      // Notify the student that one more approval is done
+      notifications.push({
+        title: "Application Partially Approved",
+        description: `Your application titled "${application.title}" has been approved by ${facultyEmail}. Awaiting further approvals.`,
+        notifiedTo: application.from, 
+        from: facultyEmail, 
+      });
+    }
+
+    application.reason = ""; // Reset rejection reason
+
+    console.log(notifications);
+
+    // Perform all database operations in parallel
+    await Promise.all([
+      application.save(),
+      Notification.insertMany(notifications),
+    ]);
 
     res.status(200).json({ message: "Application approved successfully", application });
+
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
 };
+
+
 
 export const rejectApplication = async (req, res) => {
   try {
