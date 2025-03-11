@@ -2,6 +2,7 @@ import jwt from 'jsonwebtoken';
 import Student from '../models/student.models.js';
 import Faculty from '../models/faculty.models.js';
 import FacultyAuthority from '../models/facultyauthorities.models.js';
+import StudentAuthority from '../models/studentauthorities.models.js';
 
 // Middleware to check if the user is a student
 export const studentAuthMiddleware = async (req, res, next) => {
@@ -99,13 +100,19 @@ export const facultyOrAuthorityMiddleware = async (req, res, next) => {
 
             let faculty = await Faculty.findById(decoded.facultyId);
             if (faculty) {
-                req.faculty = faculty;
+                req.authority = faculty;
+                return next();
+            }
+
+            let studentAuthority = await StudentAuthority.findById(decoded.authorityId);
+            if (studentAuthority) {
+                req.authority = studentAuthority;
                 return next();
             }
 
             let authorityFaculty = await FacultyAuthority.findById(decoded.authorityId);
             if (authorityFaculty) {
-                req.faculty = authorityFaculty;
+                req.authority = authorityFaculty;
                 return next();
             }
 
