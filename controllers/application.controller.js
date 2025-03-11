@@ -9,26 +9,28 @@ import Notification from "../models/notification.models.js";
 // Create a new application
 export const createApplication = async (req, res) => {
   try {
-    const { title, to, body, file, receipantAuthorityType, priority } = req.body;
+    const { title, to, body, file, receipantAuthorityType, priority, label} = req.body;
     const from = req.student._id;
-    console.log(req.body);
 
-    if (!title || !to || !body) {
-      return res.status(400).json({ message: "Title, to and body are required" });
+    if (!title || !to || !body || !label) {
+      return res.status(400).json({ message: "Title,label, to and body are required" });
     }
     let toData = [];
     for (let id of to) {
       toData.push({ authority: id, status: "pending" })
     }
+    const currentRecipient=toData[0].authority;
 
     const newApplication = new Application({
       from,
       title,
       to: toData,
       body,
+      label,
       file: file ?? "",
       priority: priority ?? "high",
-      isApproved: false
+      isApproved: false,
+      currentRecipient
     });
     await newApplication.save();
 
@@ -72,6 +74,8 @@ export const reapplyApplication = async (req, res) => {
     application.body = body;
     application.reason = "";
     application.file = file ?? application.file;
+    application.isApproved = false;
+    application.currentRecipient = application.to[0].authority;
     
     // Reset recipient statuses
     application.to.forEach((recipient) => {
@@ -103,24 +107,26 @@ export const reapplyApplication = async (req, res) => {
 };
 
 
-// Get all applications (visible to all students)
+// Get all applications (visible to all students/Faculties/Authorities)
 export const getAllApplications = async (req, res) => {
   try {
     let applications = await Application.find();
 
-    // Fetch 'from' and 'to' details manually
     applications = await Promise.all(
       applications.map(async (app) => {
         // Fetch `from` details
-        const fromEntity = await Student.findOne({ _id: app.from }).select("name email");
+        const fromEntity = await Student.findOne({ _id: app.from }).select("name email department");
 
         // Fetch `to` details
         const toEntities = await Promise.all(
           app.to.map(async (toId) => {
-            const faculty = await FacultyAuthority.findOne({ _id: toId.authority }).select("name email");
+            const facultyAuth = await FacultyAuthority.findOne({ email: toId.authority }).select("name email position");
+            if (facultyAuth) return { to: {name:facultyAuth.position, email:facultyAuth.email}, status: toId.status };
+
+            const faculty = await Faculty.findOne({ email: toId.authority }).select("name email");
             if (faculty) return { to: faculty.toObject(), status: toId.status };
 
-            const studentAuth = await StudentAuthority.findOne({ _id: toId.authority }).select("name email");
+            const studentAuth = await StudentAuthority.findOne({ email: toId.authority }).select("name email");
             return studentAuth ? { to: studentAuth.toObject(), status: toId.status } : null;
           })
         );
@@ -202,6 +208,7 @@ export const getStudentApplications = async (req, res) => {
 
     res.status(200).json(applications);
   } catch (error) {
+    console.log(error);
     res.status(500).json({ error: "Server error", details: error.message });
   }
 };
