@@ -48,7 +48,6 @@ export const facultyAuthMiddleware = async (req, res, next) => {
             }
             // If token is valid, attach the user data to the request
             const faculty = await Faculty.findById(decoded.facultyId);
-            console.log(faculty)
             req.faculty = faculty;
             next();
         });
@@ -106,13 +105,13 @@ export const facultyOrAuthorityMiddleware = async (req, res, next) => {
 
             let studentAuthority = await StudentAuthority.findById(decoded.authorityId);
             if (studentAuthority) {
-                req.authority = studentAuthority;
+                req.authority = { email: studentAuthority.email, name: studentAuthority.position };
                 return next();
             }
 
             let authorityFaculty = await FacultyAuthority.findById(decoded.authorityId);
             if (authorityFaculty) {
-                req.authority = authorityFaculty;
+                req.authority = { email: authorityFaculty.email, name: authorityFaculty.position };
                 return next();
             }
 
