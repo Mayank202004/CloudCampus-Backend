@@ -45,20 +45,12 @@ export const getNotificationsForStudent = async (req, res) => {
 // @access  Private (Authenticated Faculty)
 export const getNotificationsForFaculty = async (req, res) => {
   try {
-    const facultyEmail = req.faculty.email.trim().toLowerCase(); // Normalize the email for comparison
-    console.log("Fetching notifications for:", facultyEmail);
-
-    // Fetch notifications where faculty is notified by Email only
+    const facultyEmail = req.authority.email.trim().toLowerCase(); 
     const notifications = await Notification.find({
-      notifiedTo: facultyEmail  // Search only by email since _id is not in notifiedTo
+      notifiedTo: facultyEmail 
     }).sort({ createdAt: -1 });
-    console.log("Found notifications:", notifications);
-
-    console.log("Found notifications:", notifications);
-
     res.status(200).json(notifications);
   } catch (error) {
-    console.log("Error fetching notifications:", error);
     res.status(500).json({ message: error.message });
   }
 };
