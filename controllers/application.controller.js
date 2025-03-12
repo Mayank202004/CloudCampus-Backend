@@ -352,7 +352,9 @@ export const getAllAuthorityApplications = async (req, res) => {
 };
 
 
-
+// @desc Approve an application
+// @route PATCH /applications/approve/:applicationId
+// @access Protected (Faculty Authorities only)
 export const approveApplication = async (req, res) => {
   try {
     const facultyEmail = req.authority.email; 
@@ -419,7 +421,7 @@ export const approveApplication = async (req, res) => {
       // Notify the student that one more approval is done
       notifications.push({
         title: "Application Partially Approved",
-        description: `Your application titled "${application.title}" has been approved by ${facultyEmail}. Awaiting further approvals.`,
+        description: `Your application titled "${application.title}" has been approved by ${req.authority.name}. Awaiting further approvals.`,
         notifiedTo: application.from, 
         from: facultyEmail, 
       });
@@ -427,11 +429,9 @@ export const approveApplication = async (req, res) => {
 
     application.reason = ""; // Reset rejection reason
 
-    console.log(notifications);
-
     // Perform all database operations in parallel
     await Promise.all([
-      application.save(),
+      application.save({ validateBeforeSave: false }),
       Notification.insertMany(notifications),
     ]);
 
@@ -443,36 +443,134 @@ export const approveApplication = async (req, res) => {
 };
 
 
-
+// @desc Used to reject application
+// @route PATCH /applications/reject/:applicationId
+// @access Protected (Faculty/Authority only)
 export const rejectApplication = async (req, res) => {
   try {
+    const { reason } = req.body;
+    console.log(req.authority);
+    const facultyEmail = req.authority.email; 
+
+    if(!reason) {
+      return res.status(400).json({ message: "Reason is required for rejecting" });
+    }
+
     let application = await Application.findById(req.params.applicationId);
 
     if (!application) {
       return res.status(404).json({ message: "Application not found" });
     }
 
-    let facultyId = req.authorityFaculty._id;
-    let updated = false;
+    // Check if the current recipient matches the faculty email
+    if (application.currentRecipient !== facultyEmail) {
+      return res.status(403).json({ message: "Unauthorized: You cannot approve this application" });
+    }
 
-    application.to.forEach((toObj) => {
-      if (toObj.authority.toString() === facultyId.toString()) {
-        toObj.status = "rejected";
-        updated = true;
-      }
-    });
+    // Check if already approved
+    if (application.isApproved) {
+      return res.status(400).json({ message: "Application is already fully approved." });
+    }
 
-    if (!updated) {
+    let currentIndex = application.to.findIndex(recipient => recipient.authority === facultyEmail);
+
+    // Check if the faculty is an approver
+    if (currentIndex === -1) {
       return res.status(403).json({ message: "Unauthorized: You cannot reject this application" });
     }
+
+    // Check if already rejected
+    if (application.to[currentIndex].status === "rejected") {
+      return res.status(400).json({ message: "Application has already been rejected by you." });
+    }
+
+    // Mark as rejected
+    application.to[currentIndex].status = "rejected";
+    application.reason = reason;
+
+    // Send notification to student
+    await Notification.create({
+      title: "Application Rejected",
+      description: `Your application titled "${application.title}" has been rejected by ${req.authority.name} due to: ${reason}`,
+      notifiedTo: application.from, 
+      from: facultyEmail, 
+    });
 
     await application.save();
 
     res.status(200).json({ message: "Application rejected successfully", application });
+
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
 };
+
+// @desc Send application back to applicant
+// @route PATCH /applications/send-back/:applicationId
+// @access Protected (Faculty/Authority only)
+export const sendBackToApplicant = async (req, res) => {
+  try {
+    const { reason } = req.body;
+    console.log(req.authority);
+    const facultyEmail = req.authority.email;
+
+    if (!reason) {
+      return res.status(400).json({ message: "Reason is required for sending back the application" });
+    }
+
+    let application = await Application.findById(req.params.applicationId);
+
+    if (!application) {
+      return res.status(404).json({ message: "Application not found" });
+    }
+
+    // Check if the current recipient matches the faculty email
+    if (application.currentRecipient !== facultyEmail) {
+      return res.status(403).json({ message: "Unauthorized: You cannot approve this application" });
+    }
+
+    // Check if already approved or rejected
+    if (application.isApproved) {
+      return res.status(400).json({ message: "Application is already fully approved." });
+    }
+    
+    if (application.to.some(recipient => recipient.status === "rejected")) {
+      return res.status(400).json({ message: "Application has already been rejected by an authority. It cannot be sent back." });
+    }
+
+    let currentIndex = application.to.findIndex(recipient => recipient.authority === facultyEmail);
+
+    // Check if the faculty is an approver
+    if (currentIndex === -1) {
+      return res.status(403).json({ message: "Unauthorized: You cannot send back this application" });
+    }
+
+    // Check if already sent back
+    if (application.to[currentIndex].status === "sent back to applicant") {
+      return res.status(400).json({ message: "Application has already been sent back by you." });
+    }
+
+    // Mark as sent back
+    application.to[currentIndex].status = "sent back to applicant";
+    application.reason = reason;
+
+    // Send notification to student
+    await Notification.create({
+      title: "Application Sent Back",
+      description: `Your application titled "${application.title}" has been sent back by ${req.authority.name} due to: ${reason}`,
+      notifiedTo: application.from,
+      from: facultyEmail,
+    });
+
+    await application.save({ validateBeforeSave: false }),
+
+    res.status(200).json({ message: "Application sent back successfully", application });
+
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
 
 export const generateApplication = async (req, res) => {
   try {
@@ -496,7 +594,7 @@ export const generateApplication = async (req, res) => {
       return res.status(403).json({ message: "Unauthorized: You cannot reject this application" });
     }
 
-    await application.save();
+    await application.save({ validateBeforeSave: false }),
 
     res.status(200).json({ message: "Application rejected successfully", application });
   } catch (error) {
