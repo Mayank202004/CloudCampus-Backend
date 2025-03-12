@@ -1,5 +1,5 @@
 import express from "express";
-import { getAllApplications, getAllApplicationSenders, getStudentApplications, createApplication, approveApplication, rejectApplication, generateApplication, getApplicationPrint, reapplyApplication, getApplicationsForApproval, getAllAuthorityApplications} from "../controllers/application.controller.js";
+import { getAllApplications, getAllApplicationSenders, getStudentApplications, createApplication, approveApplication, rejectApplication, generateApplication, getApplicationPrint, reapplyApplication, getApplicationsForApproval, getAllAuthorityApplications, sendBackToApplicant} from "../controllers/application.controller.js";
 import { facultyAuthMiddleware, isFacultyAuthority, studentAuthMiddleware, facultyOrAuthorityMiddleware,studentOrFacultyMiddleware} from "../middlewares/auth.js";
 
 const router = express.Router();
@@ -17,6 +17,7 @@ router.get("/applications-for-approval", facultyOrAuthorityMiddleware, getApplic
 router.get("/my-authority-applications", facultyOrAuthorityMiddleware, getAllAuthorityApplications);
 router.patch("/approve/:applicationId", facultyOrAuthorityMiddleware, approveApplication);
 router.patch("/reject/:applicationId", facultyOrAuthorityMiddleware, rejectApplication);
+router.patch("/send-back/:applicationId", facultyOrAuthorityMiddleware, sendBackToApplicant);
 router.get("/priint/:applicationId", studentAuthMiddleware, generateApplication);
 router.get("/generate-html/:applicationId", getApplicationPrint);
 
