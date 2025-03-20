@@ -1,7 +1,9 @@
 import StudentAuthority from "../models/studentauthorities.models.js";
 import bcryptjs from "bcryptjs";
 
-// Create a new Student Authority
+// @desc Create a new Student Authority
+// @route POST /api/studentauthorities
+// @access Public
 export const createStudentAuthority = async (req, res) => {
   try {
     const { student, position } = req.body;
@@ -20,7 +22,9 @@ export const createStudentAuthority = async (req, res) => {
   }
 };
 
-// Get all Student Authorities
+// @desc Update a Student Authority
+// @route PUT /api/studentauthorities/:id
+// @access Public
 export const getStudentAuthorities = async (req, res) => {
   try {
     const authorities = await StudentAuthority.find().populate("student", "name registrationNo");
@@ -31,7 +35,9 @@ export const getStudentAuthorities = async (req, res) => {
   }
 };
 
-
+// @desc login a Student Authority
+// @route POST /api/studentauthorities/login
+// @access Public
 export const loginStudentAuthority = async (req, res) => {
   try {
 
