@@ -48,6 +48,9 @@ export const createStudent = async (req, res) => {
   }
 };
 
+// @desc Get all students
+// @route GET /api/students
+// @access Public
 export const getAllStudents = async (req, res) => {
   try {
     const students = await Student.find();
@@ -58,6 +61,9 @@ export const getAllStudents = async (req, res) => {
   }
 };
 
+// @desc Get a student by ID
+// @route GET /api/students/:id
+// @access Protected (student)
 export const getCurrentStudent = async (req, res) => {
   try {
     const student = await Student.findById(req.student._id);
@@ -67,7 +73,9 @@ export const getCurrentStudent = async (req, res) => {
   }
 }
 
-
+// @desc Update student details (profile photo)
+// @route PUT /api/students/updatephoto
+// @access Protected (student)
 export const updateStudent = async (req, res) => {
   try {
     const { profilePhoto } = req.body;
@@ -87,6 +95,7 @@ export const updateStudent = async (req, res) => {
 
 // @desc Update student details (bloodgroup)
 // @route PUT /api/students/updatebloodgroup 
+// @access Protected (student)
 export const updateBloodGroup = async (req, res) => {
   try {
     const { bloodGroup } = req.body;
@@ -114,6 +123,7 @@ export const updateBloodGroup = async (req, res) => {
 
 // @desc Update student details (mobile number)
 // @route PUT /api/students/updatephone 
+// @access Protected (student)
 export const updatePhoneNumber = async (req, res) => {
   try {
     const { phone } = req.body;
@@ -140,6 +150,7 @@ export const updatePhoneNumber = async (req, res) => {
 
 // @desc Update student details (address)
 // @route PUT /api/students/updateaddress 
+// @access Protected (student)
 export const updateAddress = async (req, res) => {
   try {
     const { address } = req.body;
@@ -167,7 +178,9 @@ export const updateAddress = async (req, res) => {
 
 
 
-
+// @desc login a student
+// @route POST /api/students/login
+// @access Public
 export const loginStudent = async (req, res) => {
   try {
 
