@@ -1,6 +1,8 @@
 import Request from "../models/requests.models.js";
 
-// Create a new request
+// @desc Create a new request
+// @route POST /api/requests
+// @access Public
 export const createRequest = async (req, res) => {
   try {
     const { from, to, toModel, application, applicationModel } = req.body;
@@ -20,7 +22,9 @@ export const createRequest = async (req, res) => {
   }
 };
 
-// Get all requests
+// @desc Get all requests
+// @route GET /api/requests
+// @access Public
 export const getAllRequests = async (req, res) => {
   try {
     const requests = await Request.find()
@@ -33,7 +37,9 @@ export const getAllRequests = async (req, res) => {
   }
 };
 
-// Get a single request by ID
+// @desc Get a request by ID
+// @route GET /api/requests/:id
+// @access Public
 export const getRequestById = async (req, res) => {
   try {
     const request = await Request.findById(req.params.id)
@@ -51,7 +57,8 @@ export const getRequestById = async (req, res) => {
   }
 };
 
-// Delete a request
+// @desc delete a request
+// @route DELETE /api/requests/:id
 export const deleteRequest = async (req, res) => {
   try {
     const deletedRequest = await Request.findByIdAndDelete(req.params.id);

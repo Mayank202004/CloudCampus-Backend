@@ -6,7 +6,9 @@ import Student from "../models/student.models.js";
 import StudentAuthority from "../models/studentauthorities.models.js";
 import Notification from "../models/notification.models.js";
 
-// Create a new application
+// @desc Create a new application
+// @route POST /applications
+// @access Protected (Students only)
 export const createApplication = async (req, res) => {
   try {
     const { title, to, body, file, receipantAuthorityType, priority, label} = req.body;
@@ -108,7 +110,9 @@ export const reapplyApplication = async (req, res) => {
 };
 
 
-// Get all applications (visible to all students/Faculties/Authorities)
+// @desc get all applications
+// @route GET /applications
+// @access Protected (students/Faculties/Authorities)
 export const getAllApplications = async (req, res) => {
   try {
     let applications = await Application.find();
@@ -155,6 +159,9 @@ export const getAllApplicationSenders = async (req, res) => {
   }
 };
 
+// @desc Get all applications for a student
+// @route GET /applications/my-applications
+// @access Protected (Students only)
 export const getStudentApplications = async (req, res) => {
   try {
     let applications = await Application.find({ from: req.student._id }).lean();
