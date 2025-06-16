@@ -28,13 +28,20 @@ const ApplicationSchema = new mongoose.Schema(
     },
     isApproved: {
       type: Boolean,
-
     },
     body: {
       type: String
     },
     file: {
       type: String
+    },
+    currentRecipient: {
+      type: String,
+      required: true
+    },
+    label: {
+      type: String,
+      required: true
     },
     priority: {
       type: String,

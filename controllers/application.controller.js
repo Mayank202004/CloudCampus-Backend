@@ -6,42 +6,47 @@ import Student from "../models/student.models.js";
 import StudentAuthority from "../models/studentauthorities.models.js";
 import Notification from "../models/notification.models.js";
 
-// Create a new application
+// @desc Create a new application
+// @route POST /applications
+// @access Protected (Students only)
 export const createApplication = async (req, res) => {
   try {
-    const { title, to, body, file, receipantAuthorityType, priority } = req.body;
+    const { title, to, body, file, receipantAuthorityType, priority, label} = req.body;
     const from = req.student._id;
-    console.log(req.body);
 
-    if (!title || !to || !body) {
-      return res.status(400).json({ message: "Title, to and body are required" });
+    if (!title || !to || !body || !label) {
+      return res.status(400).json({ message: "Title,label, to and body are required" });
     }
     let toData = [];
     for (let id of to) {
       toData.push({ authority: id, status: "pending" })
     }
+    const currentRecipient=toData[0].authority;
 
     const newApplication = new Application({
       from,
       title,
       to: toData,
       body,
+      label,
       file: file ?? "",
       priority: priority ?? "high",
-      isApproved: false
+      isApproved: false,
+      currentRecipient
     });
     await newApplication.save();
 
     // Create notifications for each recipient
-    const notifications = to.map((authorityEmail) => ({
+    const notification = new Notification({
       title: "New Application Received",
       description: `You have received a new application: "${title}".`,
-      notifiedTo: authorityEmail, // Authority who will receive the notification (Storing Email)
+      notifiedTo: to[0].authority, // Only the first authority receives the notification
       from: from, // Student who applied
-      fromModel: receipantAuthorityType ?? "FacultyAuthority", // Assuming it's sent to faculty if not mentioned
-    }));
-
-    await Notification.insertMany(notifications);
+      fromModel: receipantAuthorityType ?? "FacultyAuthority", // Default to FacultyAuthority if not mentioned
+    });
+    
+    await notification.save();
+    
 
     res.status(200).json({ message: "Application created successfully", application: newApplication });
 
@@ -72,6 +77,8 @@ export const reapplyApplication = async (req, res) => {
     application.body = body;
     application.reason = "";
     application.file = file ?? application.file;
+    application.isApproved = false;
+    application.currentRecipient = application.to[0].authority;
     
     // Reset recipient statuses
     application.to.forEach((recipient) => {
@@ -83,16 +90,16 @@ export const reapplyApplication = async (req, res) => {
     // Extract recipient emails
     const recipientEmails = application.to.map((recipient) => recipient.authority); // Extracting only email
 
-    // Send notifications again to all recipients
-    const notifications = recipientEmails.map((authorityEmail) => ({
-      title: "Application Re-Applied",
-      description: `A re-applied application requires your review: "${title}".`,
-      notifiedTo: authorityEmail, // Authority email
-      from: req.student._id, // Student who re-applied
-      fromModel: "FacultyAuthority",
-    }));
-
-    await Notification.insertMany(notifications);
+    // Send notifications again to first authority
+    const notification = new Notification({
+      title: "New Application Received",
+      description: `You have received a new application: "${title}".`,
+      notifiedTo: to[0].authority, // Only the first authority receives the notification
+      from: from, // Student who applied
+      fromModel: receipantAuthorityType ?? "FacultyAuthority", // Default to FacultyAuthority if not mentioned
+    });
+    await notification.save();
+    
 
     res.status(200).json({ message: "Application re-applied successfully", application });
 
@@ -103,24 +110,28 @@ export const reapplyApplication = async (req, res) => {
 };
 
 
-// Get all applications (visible to all students)
+// @desc get all applications
+// @route GET /applications
+// @access Protected (students/Faculties/Authorities)
 export const getAllApplications = async (req, res) => {
   try {
     let applications = await Application.find();
 
-    // Fetch 'from' and 'to' details manually
     applications = await Promise.all(
       applications.map(async (app) => {
         // Fetch `from` details
-        const fromEntity = await Student.findOne({ _id: app.from }).select("name email");
+        const fromEntity = await Student.findOne({ _id: app.from }).select("name email department");
 
         // Fetch `to` details
         const toEntities = await Promise.all(
           app.to.map(async (toId) => {
-            const faculty = await FacultyAuthority.findOne({ _id: toId.authority }).select("name email");
+            const facultyAuth = await FacultyAuthority.findOne({ email: toId.authority }).select("name email position");
+            if (facultyAuth) return { to: {name:facultyAuth.position, email:facultyAuth.email}, status: toId.status };
+
+            const faculty = await Faculty.findOne({ email: toId.authority }).select("name email");
             if (faculty) return { to: faculty.toObject(), status: toId.status };
 
-            const studentAuth = await StudentAuthority.findOne({ _id: toId.authority }).select("name email");
+            const studentAuth = await StudentAuthority.findOne({ email: toId.authority }).select("name email");
             return studentAuth ? { to: studentAuth.toObject(), status: toId.status } : null;
           })
         );
@@ -148,6 +159,9 @@ export const getAllApplicationSenders = async (req, res) => {
   }
 };
 
+// @desc Get all applications for a student
+// @route GET /applications/my-applications
+// @access Protected (Students only)
 export const getStudentApplications = async (req, res) => {
   try {
     let applications = await Application.find({ from: req.student._id }).lean();
@@ -202,20 +216,89 @@ export const getStudentApplications = async (req, res) => {
 
     res.status(200).json(applications);
   } catch (error) {
+    console.log(error);
     res.status(500).json({ error: "Server error", details: error.message });
   }
 };
 
 
 
-export const getApplicationsForFaculty = async (req, res) => {
+export const getApplicationsForApproval = async (req, res) => {
   try {
-    const facultyEmail = req.faculty.email;
+    const authorityEmail = req.authority.email;
 
-    // Fetch only applications where at least one `to` entry matches the faculty email and has status "pending"
+    // Fetch only applications which are pending and current level of acceptance is with the current authority
     let applications = await Application.find({
-      "to": { $elemMatch: { authority: facultyEmail, status: "pending" } }
-    }).lean(); 
+      isApproved: false,
+      currentRecipient: authorityEmail,
+    }).lean();
+
+    applications = await Promise.all(
+      applications.map(async (app) => {
+        const student = await Student.findById(app.from).select("name email").lean();
+
+        // No need to filter again, just process `app.to`
+        const toEntities = await Promise.all(
+          app.to.map(async (entry) => {
+            const email = entry.authority;
+
+            // Check faculty authority
+            const facultyAuthority = await FacultyAuthority.findOne({ email }).populate("faculty").lean();
+            if (facultyAuthority?.faculty) {
+              return {
+                authority: email,
+                status: entry.status,
+                _id: entry._id,
+                name: facultyAuthority.faculty.name || "Unknown",
+                registrationNo: facultyAuthority.faculty.registrationNo || "N/A",
+                role: "Faculty Authority"
+              };
+            }
+
+            // Check student authority
+            const studentAuthority = await StudentAuthority.findOne({ email }).populate("student").lean();
+            if (studentAuthority?.student) {
+              return {
+                authority: email,
+                status: entry.status,
+                _id: entry._id,
+                name: studentAuthority.student.name || "Unknown",
+                registrationNo: studentAuthority.student.registrationNo || "N/A",
+                role: "Student Authority"
+              };
+            }
+
+            // Default fallback if no authority found
+            return {
+              authority: email,
+              status: entry.status,
+              _id: entry._id
+            };
+          })
+        );
+
+        return {
+          ...app,
+          from: student || null,
+          to: toEntities
+        };
+      })
+    );
+
+    res.status(200).json({ applications });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+export const getAllAuthorityApplications = async (req, res) => {
+  try {
+    const authorityEmail = req.authority.email;
+
+    // Fetch all applications which are approved/pending/sent back ...
+    let applications = await Application.find({
+      to: { $elemMatch: { authority: authorityEmail } }
+    }).lean();
 
     applications = await Promise.all(
       applications.map(async (app) => {
@@ -276,69 +359,225 @@ export const getApplicationsForFaculty = async (req, res) => {
 };
 
 
-
-
+// @desc Approve an application
+// @route PATCH /applications/approve/:applicationId
+// @access Protected (Faculty Authorities only)
 export const approveApplication = async (req, res) => {
   try {
+    const facultyEmail = req.authority.email; 
+
     let application = await Application.findById(req.params.applicationId);
 
     if (!application) {
       return res.status(404).json({ message: "Application not found" });
     }
 
-    let facultyId = req.authorityFaculty._id;
-    let updated = false;
+    // Check if already approved
+    if (application.isApproved) {
+      return res.status(400).json({ message: "Application is already fully approved." });
+    }
 
-    // Update the status
-    application.to.forEach((toObj) => {
-      if (toObj.authority.toString() === facultyId.toString()) {
-        toObj.status = "approved";
+    // Check if the current recipient matches the faculty email
+    if (application.currentRecipient !== facultyEmail) {
+      return res.status(403).json({ message: "Unauthorized: You cannot approve this application" });
+    }
+
+    let updated = false;
+    let currentIndex = -1;
+
+    for (let i = 0; i < application.to.length; i++) {
+      if (application.to[i].authority === facultyEmail) {
+        application.to[i].status = "approved";
         updated = true;
+        currentIndex = i;
+        break;
       }
-    });
+    }
 
     if (!updated) {
       return res.status(403).json({ message: "Unauthorized: You cannot approve this application" });
     }
 
-    // Save the changes to the database
-    await application.save();
+    let notifications = [];
+
+    // Check if all `to` authorities have approved
+    if (currentIndex === application.to.length - 1) {
+      application.isApproved = true;
+      application.currentRecipient = ""; // No more recipients
+
+      // Notify the student about full approval
+      notifications.push({
+        title: "Application Fully Approved",
+        description: `Your application titled "${application.title}" has been fully approved.`,
+        notifiedTo: application.from, 
+        from: facultyEmail, // The last approving authority
+      });
+
+    } else {
+      // Set currentRecipient to the next approver
+      application.currentRecipient = application.to[currentIndex + 1].authority;
+
+      // Notify the next authority for approval
+      notifications.push({
+        title: "New Application Received",
+        description: `You have received a new application: "${application.title}". Please review it.`,
+        notifiedTo: application.to[currentIndex + 1].authority,
+        from: application.from, // Student who applied
+      });
+
+      // Notify the student that one more approval is done
+      notifications.push({
+        title: "Application Partially Approved",
+        description: `Your application titled "${application.title}" has been approved by ${req.authority.name}. Awaiting further approvals.`,
+        notifiedTo: application.from, 
+        from: facultyEmail, 
+      });
+    }
+
+    application.reason = ""; // Reset rejection reason
+
+    // Perform all database operations in parallel
+    await Promise.all([
+      application.save({ validateBeforeSave: false }),
+      Notification.insertMany(notifications),
+    ]);
 
     res.status(200).json({ message: "Application approved successfully", application });
+
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
 };
 
+
+// @desc Used to reject application
+// @route PATCH /applications/reject/:applicationId
+// @access Protected (Faculty/Authority only)
 export const rejectApplication = async (req, res) => {
   try {
+    const { reason } = req.body;
+    console.log(req.authority);
+    const facultyEmail = req.authority.email; 
+
+    if(!reason) {
+      return res.status(400).json({ message: "Reason is required for rejecting" });
+    }
+
     let application = await Application.findById(req.params.applicationId);
 
     if (!application) {
       return res.status(404).json({ message: "Application not found" });
     }
 
-    let facultyId = req.authorityFaculty._id;
-    let updated = false;
+    // Check if the current recipient matches the faculty email
+    if (application.currentRecipient !== facultyEmail) {
+      return res.status(403).json({ message: "Unauthorized: You cannot approve this application" });
+    }
 
-    application.to.forEach((toObj) => {
-      if (toObj.authority.toString() === facultyId.toString()) {
-        toObj.status = "rejected";
-        updated = true;
-      }
-    });
+    // Check if already approved
+    if (application.isApproved) {
+      return res.status(400).json({ message: "Application is already fully approved." });
+    }
 
-    if (!updated) {
+    let currentIndex = application.to.findIndex(recipient => recipient.authority === facultyEmail);
+
+    // Check if the faculty is an approver
+    if (currentIndex === -1) {
       return res.status(403).json({ message: "Unauthorized: You cannot reject this application" });
     }
+
+    // Check if already rejected
+    if (application.to[currentIndex].status === "rejected") {
+      return res.status(400).json({ message: "Application has already been rejected by you." });
+    }
+
+    // Mark as rejected
+    application.to[currentIndex].status = "rejected";
+    application.reason = reason;
+
+    // Send notification to student
+    await Notification.create({
+      title: "Application Rejected",
+      description: `Your application titled "${application.title}" has been rejected by ${req.authority.name} due to: ${reason}`,
+      notifiedTo: application.from, 
+      from: facultyEmail, 
+    });
 
     await application.save();
 
     res.status(200).json({ message: "Application rejected successfully", application });
+
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
 };
+
+// @desc Send application back to applicant
+// @route PATCH /applications/send-back/:applicationId
+// @access Protected (Faculty/Authority only)
+export const sendBackToApplicant = async (req, res) => {
+  try {
+    const { reason } = req.body;
+    console.log(req.authority);
+    const facultyEmail = req.authority.email;
+
+    if (!reason) {
+      return res.status(400).json({ message: "Reason is required for sending back the application" });
+    }
+
+    let application = await Application.findById(req.params.applicationId);
+
+    if (!application) {
+      return res.status(404).json({ message: "Application not found" });
+    }
+
+    // Check if the current recipient matches the faculty email
+    if (application.currentRecipient !== facultyEmail) {
+      return res.status(403).json({ message: "Unauthorized: You cannot approve this application" });
+    }
+
+    // Check if already approved or rejected
+    if (application.isApproved) {
+      return res.status(400).json({ message: "Application is already fully approved." });
+    }
+    
+    if (application.to.some(recipient => recipient.status === "rejected")) {
+      return res.status(400).json({ message: "Application has already been rejected by an authority. It cannot be sent back." });
+    }
+
+    let currentIndex = application.to.findIndex(recipient => recipient.authority === facultyEmail);
+
+    // Check if the faculty is an approver
+    if (currentIndex === -1) {
+      return res.status(403).json({ message: "Unauthorized: You cannot send back this application" });
+    }
+
+    // Check if already sent back
+    if (application.to[currentIndex].status === "sent back to applicant") {
+      return res.status(400).json({ message: "Application has already been sent back by you." });
+    }
+
+    // Mark as sent back
+    application.to[currentIndex].status = "sent back to applicant";
+    application.reason = reason;
+
+    // Send notification to student
+    await Notification.create({
+      title: "Application Sent Back",
+      description: `Your application titled "${application.title}" has been sent back by ${req.authority.name} due to: ${reason}`,
+      notifiedTo: application.from,
+      from: facultyEmail,
+    });
+
+    await application.save({ validateBeforeSave: false }),
+
+    res.status(200).json({ message: "Application sent back successfully", application });
+
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
 
 export const generateApplication = async (req, res) => {
   try {
@@ -362,7 +601,7 @@ export const generateApplication = async (req, res) => {
       return res.status(403).json({ message: "Unauthorized: You cannot reject this application" });
     }
 
-    await application.save();
+    await application.save({ validateBeforeSave: false }),
 
     res.status(200).json({ message: "Application rejected successfully", application });
   } catch (error) {
