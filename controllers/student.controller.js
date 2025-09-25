@@ -173,7 +173,7 @@ export const loginStudent = async (req, res) => {
 
     const { email, password } = req.body;
 
-    const student = await Student.findOne({ email });
+    const student = await Student.findOne({ email }).select("-createdAt -updatedAt");
 
     if (!student) {
       return res.status(400).json({ message: 'Invalid email or password' });

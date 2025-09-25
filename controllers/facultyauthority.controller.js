@@ -54,7 +54,7 @@ export const loginFacultyAuthority = async (req, res) => {
   
       const { email, password } = req.body;
   
-      const authority = await FacultyAuthority.findOne({ email });
+      const authority = await FacultyAuthority.findOne({ email }).select("-signature -createdAt -updatedAt").populate("faculty","_id name email");
   
       if (!authority) {
         return res.status(400).json({ message: 'Invalid email or password' });
@@ -71,9 +71,9 @@ export const loginFacultyAuthority = async (req, res) => {
       const token = jwt.sign(payload, process.env.JWT_SECRET_KEY);
 
       res.cookie("token", token)
-      res.cookie("role", authority.role)
+      res.cookie("role", "faculty authority")
 
-      res.status(200).send({ token, authority, role: authority.role });
+      res.status(200).send({ token, role: "faculty authority", subRole:authority?.position, authority});
   
     } catch (error) {
       res.status(500).send({ message: error.message })
