@@ -8,7 +8,6 @@ router.use(express.static("public"));
 
 
 router.post("/", studentAuthMiddleware, createApplication);
-router.post("/", studentAuthMiddleware, createApplication);
 router.patch("/reapply", studentAuthMiddleware,reapplyApplication);
 router.get("/all", studentOrFacultyMiddleware, getAllApplications);
 router.get("/senders", studentAuthMiddleware, getAllApplicationSenders);
