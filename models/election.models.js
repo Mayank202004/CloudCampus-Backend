@@ -10,22 +10,6 @@ const ElectionSchema = new mongoose.Schema(
             type: String,
             required: true,
         },
-        candidates: [
-            {
-                candidate: {
-                    type: mongoose.Schema.Types.ObjectId,
-                    ref: 'Student'
-                },
-                manifesto: {
-                    type: String,
-                    required: true
-                },
-                isApproved: {
-                    type: Boolean,
-                    default: false
-                }
-            }
-        ],
         startDate: {
             type: Date,
             required: true
@@ -33,7 +17,7 @@ const ElectionSchema = new mongoose.Schema(
         endDate: {
             type: Date,
             required: true
-        }
+        },
     },
     { timestamps: true }
 );

@@ -8,12 +8,17 @@ import Student from "../models/student.models.js";
 // @access  Private (Faculty only)
 export const createElection = async (req, res) => {
   try {
-    const { electionName, description, date } = req.body;
+    const { electionName, description, startDate, endDate } = req.body;
+
+    if (!electionName || !description || !startDate || !endDate) {
+      return res.status(400).json({ message: "All fields are required" });
+    }
 
     const newElection = new Election({
       electionName,
       description,
-      date,
+      startDate,
+      endDate,
     });
 
     await newElection.save();
@@ -25,11 +30,11 @@ export const createElection = async (req, res) => {
 
 export const getElectionInfo = async (req, res) => {
   try {
-    const election = await Election.findById("67ba7d1370096377beb26435");
-    if (!election) res.status(404).send({ message: "Election not found" });
-    res.status(200).send({ election });
+    const currentDate = new Date();
+    const elections = await Election.findOne({ endDate: { $gt: currentDate } });
+    res.status(200).json({ elections });
   } catch (error) {
-    res.status(500).send({ message: error.message })
+    res.status(500).json({ message: error.message });
   }
 }
 
@@ -56,8 +61,10 @@ export const getElectionDetails = async (req, res) => {
           "name registrationNo profilePhoto email department" 
         ).lean();
 
+    const {positionId, positionName} = pos;
         return {
-          ...pos,
+          positionId,
+          positionName,
           candidates,
         };
       })
