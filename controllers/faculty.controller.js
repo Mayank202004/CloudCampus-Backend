@@ -48,7 +48,7 @@ export const loginFaculty = async (req, res) => {
 
     const { email, password } = req.body;
 
-    const faculty = await Faculty.findOne({ email });
+    const faculty = await Faculty.findOne({ email }).select("-createdAt -updatedAt -phone");
 
     if (!faculty) {
       return res.status(400).json({ message: 'Invalid email or password' });
@@ -68,7 +68,7 @@ export const loginFaculty = async (req, res) => {
     res.cookie("token", token)
     res.cookie("role", "faculty")
 
-    res.status(200).send({ token, role: "faculty" });
+    res.status(200).send({ token, role: "faculty" ,faculty});
 
   } catch (error) {
     res.status(500).send({ message: error.message })
