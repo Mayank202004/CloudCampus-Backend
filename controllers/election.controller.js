@@ -1,5 +1,8 @@
 import Election from "../models/election.models.js";
 import axios from 'axios';
+import Student from "../models/student.models.js";
+
+
 // @desc    Create a new election
 // @route   POST /api/elections
 // @access  Private (Faculty only)
@@ -30,16 +33,46 @@ export const getElectionInfo = async (req, res) => {
   }
 }
 
+/**
+ * @desc Get election and candidates details
+ * @returns {Object} Election details
+ * @access Public
+ */
 export const getElectionDetails = async (req, res) => {
   try {
-    const response = await axios.get(`${process.env.BLOCKCHAIN_URL}`);
+    // 1. Fetch positions from blockchain server
+    const response = await axios.get(`${process.env.BLOCKCHAIN_URL}/positionsWithCandidates`);
     const data = response.data;
-    console.log(data);
-    res.status(200).json({ message: "Election created successfully", data });
+
+    if (!data.success) {
+      return res.status(500).json({ message: "Failed to fetch positions from blockchain" });
+    }
+
+    // 2. Enrich candidateUIDs with student details
+    const positions = await Promise.all(
+      data.positions.map(async (pos) => {
+        const candidates = await Student.find(
+          { _id: { $in: pos.candidateUIDs } },
+          "name registrationNo profilePhoto email department" 
+        ).lean();
+
+        return {
+          ...pos,
+          candidates,
+        };
+      })
+    );
+
+    res.status(200).json({
+      success: true,
+      message: "Election details fetched successfully",
+      positions,
+    });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    console.error("getElectionDetails error:", error.message);
+    res.status(500).json({ success: false, message: error.message });
   }
-}
+};
 
 export const voteForElection = async (req, res) => {
   try {
