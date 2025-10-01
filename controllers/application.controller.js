@@ -115,40 +115,72 @@ export const reapplyApplication = async (req, res) => {
 // @access Protected (students/Faculties/Authorities)
 export const getAllApplications = async (req, res) => {
   try {
-    let applications = await Application.find();
+    // Fetch all applications
+    let applications = await Application.find().lean();
 
+    // Populate 'from' and 'to' fields
     applications = await Promise.all(
       applications.map(async (app) => {
-        // Fetch `from` details
-        const fromEntity = await Student.findOne({ _id: app.from }).select("name email department");
+        // Fetch 'from' details
+        const student = await Student.findById(app.from)
+          .select("name email department registrationNo")
+          .lean();
 
-        // Fetch `to` details
+        // Fetch 'to' details
         const toEntities = await Promise.all(
-          app.to.map(async (toId) => {
-            const facultyAuth = await FacultyAuthority.findOne({ email: toId.authority }).select("name email position");
-            if (facultyAuth) return { to: {name:facultyAuth.position, email:facultyAuth.email}, status: toId.status };
+          app.to.map(async (entry) => {
+            const email = entry.authority;
 
-            const faculty = await Faculty.findOne({ email: toId.authority }).select("name email");
-            if (faculty) return { to: faculty.toObject(), status: toId.status };
+            // Check if authority is FacultyAuthority
+            const facultyAuthority = await FacultyAuthority.findOne({ email }).populate("faculty").lean();
+            if (facultyAuthority && facultyAuthority.faculty) {
+              return {
+                authority: email,
+                status: entry.status,
+                _id: entry._id,
+                name: facultyAuthority.faculty.name || "Unknown",
+                registrationNo: facultyAuthority.faculty.registrationNo || "N/A",
+                role: "Faculty Authority",
+              };
+            }
 
-            const studentAuth = await StudentAuthority.findOne({ email: toId.authority }).select("name email");
-            return studentAuth ? { to: studentAuth.toObject(), status: toId.status } : null;
+            // Check if authority is StudentAuthority
+            const studentAuthority = await StudentAuthority.findOne({ email }).populate("student").lean();
+            if (studentAuthority && studentAuthority.student) {
+              return {
+                authority: email,
+                status: entry.status,
+                _id: entry._id,
+                name: studentAuthority.student.name || "Unknown",
+                registrationNo: studentAuthority.student.registrationNo || "N/A",
+                role: "Student Authority",
+              };
+            }
+
+            // If no match, return minimal object
+            return {
+              authority: email,
+              status: entry.status,
+              _id: entry._id,
+            };
           })
         );
 
         return {
-          ...app.toObject(),
-          from: fromEntity ? fromEntity.toObject() : null,
+          ...app,
+          from: student ? student : null,
           to: toEntities.filter(Boolean),
         };
       })
     );
 
-    res.status(200).json({ applications });
+    res.status(200).json(applications);
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    console.error(error);
+    res.status(500).json({ error: "Server error", details: error.message });
   }
 };
+
 
 export const getAllApplicationSenders = async (req, res) => {
   try {
