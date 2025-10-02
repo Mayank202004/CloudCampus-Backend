@@ -31,7 +31,7 @@ const PORT = process.env.PORT || 5000;
 
 
 app.use(cors({
-    origin: ['http://172.31.91.63:5173',"http://localhost:56370/"],
+    origin: ["http://10.56.247.63:5173","*"],
     credentials: true
 }));
 app.use(cookieParser())
@@ -39,8 +39,14 @@ app.use(express.json());
 app.use(express.static("public"));
 
 
+
 app.use(express.json({ limit: '50mb' })); 
 app.use(express.urlencoded({ limit: '50mb', extended: true })); 
+app.use((req, res, next) => {
+  res.set('Cache-Control', 'no-store'); // no caching
+  next();
+});
+
 
 connectDB();
 

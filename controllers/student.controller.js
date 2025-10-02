@@ -167,10 +167,8 @@ export const updateAddress = async (req, res) => {
 
 
 
-
 export const loginStudent = async (req, res) => {
   try {
-
     const { email, password } = req.body;
 
     const student = await Student.findOne({ email }).select("-createdAt -updatedAt");
@@ -180,22 +178,31 @@ export const loginStudent = async (req, res) => {
     }
 
     const isMatch = await bcryptjs.compare(password, student.password);
-
     if (!isMatch) {
       return res.status(400).json({ message: 'Invalid email or password' });
     }
 
     const payload = { studentId: student.id, username: student.username };
-
     const token = jwt.sign(payload, process.env.JWT_SECRET_KEY);
 
-    res.cookie("token", token);
-    res.cookie("role", "student");
+    // Set cookies
+    res.cookie('token', token, {
+      httpOnly: true,
+      sameSite: 'lax',  // works with local dev
+      secure: false,    // HTTP in dev
+      path: '/',
+    });
 
+    res.cookie('role', 'student', {
+      httpOnly: true,
+      sameSite: 'lax',  // works with local dev
+      secure: false,    // HTTP in dev
+      path: '/',
+    });
 
-    res.status(200).send({ student, token, role: "student" });
+    res.status(200).send({ student, token, role: 'student' });
 
   } catch (error) {
-    res.status(500).send({ message: error.message })
+    res.status(500).send({ message: error.message });
   }
 };
