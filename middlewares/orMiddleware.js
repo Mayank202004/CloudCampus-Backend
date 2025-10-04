@@ -1,12 +1,8 @@
-import { asyncHandler } from '../utils/asyncHandler.js';
-import { ApiError } from '../utils/apiError.js';
-
 /**
  * @desc Takes a list of middlewares and allows request to continue if any one passes
  * @param {Array<Function>} middlewares 
  */
-const orMiddleware = (middlewares) =>
-  asyncHandler(async (req, res, next) => {
+const orMiddleware = (middlewares) => async (req, res, next) => {
     for (const middleware of middlewares) {
       try {
         await new Promise((resolve, reject) => {
@@ -24,7 +20,7 @@ const orMiddleware = (middlewares) =>
     }
 
     // If none passed, throw
-    throw new ApiError(403, 'Forbidden: You do not have permission to access this resource.');
-  });
+    return res.status(403).json({ message: 'Forbidden: You do not have permission to access this resource.' });
+  };
 
 export {orMiddleware};

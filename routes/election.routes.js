@@ -8,13 +8,13 @@ import {
   // approveCandidate,
   // rejectCandidate,
 } from "../controllers/election.controller.js";
-import { isFacultyAuthority, studentAuthMiddleware } from "../middlewares/auth.js";
+import { FacultyAuthorityAuthMiddleware, studentAuthMiddleware } from "../middlewares/auth.js";
 import { isPasswordCorrect, validateSelfie } from "../middlewares/utilities.js";
 
 const router = express.Router();
 
 // Create an election (Only faculty can create)
-router.post("/", isFacultyAuthority, createElection);
+router.post("/", FacultyAuthorityAuthMiddleware, createElection);
 
 router.get("/detail", studentAuthMiddleware, getElectionDetails)
 

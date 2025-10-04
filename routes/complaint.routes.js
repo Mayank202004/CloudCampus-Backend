@@ -7,7 +7,7 @@ import {
   getAllComplaintSenders,
   increaseAnonymousCount,
 } from "../controllers/complaint.controller.js";
-import { studentAuthMiddleware, isFacultyAuthority } from "../middlewares/auth.js";
+import { studentAuthMiddleware, FacultyAuthorityAuthMiddleware } from "../middlewares/auth.js";
 
 const router = express.Router();
 
@@ -18,7 +18,7 @@ router.post("/", studentAuthMiddleware, createComplaint);
 router.get("/", studentAuthMiddleware, getAllComplaints);
 router.get("/senders", studentAuthMiddleware, getAllComplaintSenders);
 
-router.patch("/approve/:complaintId", isFacultyAuthority, increaseAnonymousCount)
+router.patch("/approve/:complaintId", FacultyAuthorityAuthMiddleware, increaseAnonymousCount)
 
 // Get a single complaint by ID
 // router.get("/:id", studentAuthMiddleware, getComplaintById);
