@@ -10,7 +10,7 @@ router.use(express.static("public"));
 router.post("/", studentAuthMiddleware, createApplication);
 router.patch("/reapply", studentAuthMiddleware,reapplyApplication);
 router.get("/all", orMiddleware([studentAuthMiddleware, FacultyAuthorityAuthMiddleware]), getAllApplications);
-router.get("/senders", studentAuthMiddleware, getAllApplicationSenders);
+router.get("/senders", getAllApplicationSenders);
 router.get("/my-applications", studentAuthMiddleware, getStudentApplications);
 router.get("/applications-for-approval", orMiddleware([facultyAuthMiddleware, FacultyAuthorityAuthMiddleware, StudentAuthorityAuthMiddleware]), getApplicationsForApproval);
 router.get("/my-authority-applications", orMiddleware([facultyAuthMiddleware, FacultyAuthorityAuthMiddleware, StudentAuthorityAuthMiddleware]), getAllAuthorityApplications);

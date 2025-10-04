@@ -396,7 +396,10 @@ export const getAllAuthorityApplications = async (req, res) => {
 // @access Protected (Faculty Authorities only)
 export const approveApplication = async (req, res) => {
   try {
-    const facultyEmail = req.authority.email; 
+    const authorityEmail = req.faculty?.email || req.facultyAuthority?.email || req.studentAuthority?.email; 
+
+    if(!authorityEmail)
+      return res.status(403).json({ message: "Unauthorized: You cannot approve this application" });
 
     let application = await Application.findById(req.params.applicationId);
 
@@ -410,7 +413,7 @@ export const approveApplication = async (req, res) => {
     }
 
     // Check if the current recipient matches the faculty email
-    if (application.currentRecipient !== facultyEmail) {
+    if (application.currentRecipient !== authorityEmail) {
       return res.status(403).json({ message: "Unauthorized: You cannot approve this application" });
     }
 
@@ -418,7 +421,7 @@ export const approveApplication = async (req, res) => {
     let currentIndex = -1;
 
     for (let i = 0; i < application.to.length; i++) {
-      if (application.to[i].authority === facultyEmail) {
+      if (application.to[i].authority === authorityEmail) {
         application.to[i].status = "approved";
         updated = true;
         currentIndex = i;
@@ -442,7 +445,7 @@ export const approveApplication = async (req, res) => {
         title: "Application Fully Approved",
         description: `Your application titled "${application.title}" has been fully approved.`,
         notifiedTo: application.from, 
-        from: facultyEmail, // The last approving authority
+        from: authorityEmail, // The last approving authority
       });
 
     } else {
@@ -462,7 +465,7 @@ export const approveApplication = async (req, res) => {
         title: "Application Partially Approved",
         description: `Your application titled "${application.title}" has been approved by ${req.authority.name}. Awaiting further approvals.`,
         notifiedTo: application.from, 
-        from: facultyEmail, 
+        from: authorityEmail, 
       });
     }
 

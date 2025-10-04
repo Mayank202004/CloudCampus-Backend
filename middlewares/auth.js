@@ -4,106 +4,79 @@ import Faculty from '../models/faculty.models.js';
 import FacultyAuthority from '../models/facultyauthorities.models.js';
 import StudentAuthority from '../models/studentauthorities.models.js';
 
-// Middleware to check if the user is a student
+// Generic helper to get token
+const getToken = (req) => {
+  return (
+    req.headers['authorization']?.split(' ')[1] ||
+    req.cookies.token ||
+    req.body.token
+  );
+};
+
+// Student middleware
 export const studentAuthMiddleware = async (req, res, next) => {
+  try {
+    const token = getToken(req);
+    if (!token) throw new Error('No token');
 
-    try {
+    const decoded = jwt.verify(token, process.env.JWT_SECRET_KEY);
+    const student = await Student.findById(decoded._id);
+    if (!student) throw new Error('Invalid student');
 
-        const token = req.headers['authorization']?.split(' ')[1] || req.cookies.token || req.body.token;
-        
-        if (!token) {
-            return res.status(401).json({ message: 'No token provided, authorization denied.' });
-        }
-
-        // Verify token
-        jwt.verify(token, process.env.JWT_SECRET_KEY, async (err, decoded) => {
-            if (err) {
-                return res.status(403).json({ message: 'Token is not valid.' });
-            }
-            // If token is valid, attach the user data to the request
-            const student = await Student.findById(decoded._id);
-            req.student = student;
-            next();
-        });
-    } catch (error) {
-        res.status(500).send({ message: error.message })
-    }
+    req.student = student;
+    return next();
+  } catch (err) {
+    return next(err); 
+  }
 };
 
-// Middleware to check if the user is a faculty
+// Faculty middleware
 export const facultyAuthMiddleware = async (req, res, next) => {
+  try {
+    const token = getToken(req);
+    if (!token) throw new Error('No token');
 
-    try {
+    const decoded = jwt.verify(token, process.env.JWT_SECRET_KEY);
+    const faculty = await Faculty.findById(decoded._id);
+    if (!faculty) throw new Error('Invalid faculty');
 
-        const token = req.headers['authorization']?.split(' ')[1] || req.cookies.token || req.body.token;
-
-        if (!token) {
-            return res.status(401).json({ message: 'No token provided, authorization denied.' });
-        }
-
-        // Verify token
-        jwt.verify(token, process.env.JWT_SECRET_KEY, async (err, decoded) => {
-            if (err) {
-                return res.status(403).json({ message: 'Token is not valid.' });
-            }
-            // If token is valid, attach the user data to the request
-            const faculty = await Faculty.findById(decoded._id);
-            req.faculty = faculty;
-            next();
-        });
-    } catch (error) {
-        res.status(500).send({ message: error.message })
-    }
+    req.faculty = faculty;
+    return next();
+  } catch (err) {
+    return next(err);
+  }
 };
 
-// Middleware to check if the user is a faculty authority
+// Faculty Authority middleware
 export const FacultyAuthorityAuthMiddleware = async (req, res, next) => {
+  try {
+    const token = getToken(req);
+    if (!token) throw new Error('No token');
 
-    try {
+    const decoded = jwt.verify(token, process.env.JWT_SECRET_KEY);
+    const facultyAuthority = await FacultyAuthority.findById(decoded._id);
+    if (!facultyAuthority) throw new Error('Invalid faculty authority');
 
-        const token = req.headers['authorization']?.split(' ')[1] || req.cookies.token || req.body.token;
-
-        if (!token) {
-            return res.status(401).json({ message: 'No token provided, authorization denied.' });
-        }
-
-        // Verify token
-        jwt.verify(token, process.env.JWT_SECRET_KEY, async (err, decoded) => {
-            if (err) {
-                return res.status(403).json({ message: 'Token is not valid.' });
-            }
-            // If token is valid, attach the user data to the request
-            const facultyAuthority = await FacultyAuthority.findById(decoded._id);
-            req.authorityFaculty = facultyAuthority;
-            next();
-        });
-    } catch (error) {
-        res.status(500).send({ message: error.message })
-    }
+    req.facultyAuthority = facultyAuthority;
+    return next();
+  } catch (err) {
+    return next(err);
+  }
 };
 
-// Middleware to check if the user is a student authority
+// Student Authority middleware
 export const StudentAuthorityAuthMiddleware = async (req, res, next) => {
+  try {
+    const token = getToken(req);
+    if (!token) throw new Error('No token');
 
-    try {
+    const decoded = jwt.verify(token, process.env.JWT_SECRET_KEY);
+    const studentAuthority = await StudentAuthority.findById(decoded.authorityId);
+    if (!studentAuthority) throw new Error('Invalid student authority');
 
-        const token = req.headers['authorization']?.split(' ')[1] || req.cookies.token || req.body.token;
-
-        if (!token) {
-            return res.status(401).json({ message: 'No token provided, authorization denied.' });
-        }
-
-        // Verify token
-        jwt.verify(token, process.env.JWT_SECRET_KEY, async (err, decoded) => {
-            if (err) {
-                return res.status(403).json({ message: 'Token is not valid.' });
-            }
-            // If token is valid, attach the user data to the request
-            const studentAuthority = await StudentAuthority.findById(decoded.authorityId);
-            req.studentAuthority = studentAuthority;
-            next();
-        });
-    } catch (error) {
-        res.status(500).send({ message: error.message })
-    }
+    req.studentAuthority = studentAuthority;
+    return next();
+  } catch (err) {
+    return next(err);
+  }
 };

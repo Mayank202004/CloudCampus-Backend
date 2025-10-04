@@ -66,7 +66,7 @@ export const loginFacultyAuthority = async (req, res) => {
         return res.status(400).json({ message: 'Invalid email or password' });
       }
   
-      const payload = { authorityId: authority.id, username: authority.username };
+      const payload = { _id: authority._id, name: authority.faculty.name, email: authority.email };
   
       const token = jwt.sign(payload, process.env.JWT_SECRET_KEY);
 

@@ -182,7 +182,7 @@ export const loginStudent = async (req, res) => {
       return res.status(400).json({ message: 'Invalid email or password' });
     }
 
-    const payload = { studentId: student.id, username: student.username };
+    const payload = { _id: student._id, name: student.name };
     const token = jwt.sign(payload, process.env.JWT_SECRET_KEY);
 
     // Set cookies
