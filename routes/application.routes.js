@@ -1,7 +1,7 @@
 import express from "express";
 import { getAllApplications, getAllApplicationSenders, getStudentApplications, createApplication, approveApplication, rejectApplication, generateApplication, getApplicationPrint, reapplyApplication, getApplicationsForApproval, getAllAuthorityApplications, sendBackToApplicant} from "../controllers/application.controller.js";
 import { facultyAuthMiddleware, isFacultyAuthority, studentAuthMiddleware, facultyOrAuthorityMiddleware,studentOrFacultyMiddleware} from "../middlewares/auth.js";
-
+import { orMiddleware } from "../middlewares/orMiddleware.js";
 const router = express.Router();
 
 router.use(express.static("public"));
@@ -9,7 +9,7 @@ router.use(express.static("public"));
 
 router.post("/", studentAuthMiddleware, createApplication);
 router.patch("/reapply", studentAuthMiddleware,reapplyApplication);
-router.get("/all", studentOrFacultyMiddleware, getAllApplications);
+router.get("/all", orMiddleware([studentAuthMiddleware, isFacultyAuthority]), getAllApplications);
 router.get("/senders", studentAuthMiddleware, getAllApplicationSenders);
 router.get("/my-applications", studentAuthMiddleware, getStudentApplications);
 router.get("/applications-for-approval", facultyOrAuthorityMiddleware, getApplicationsForApproval);

@@ -32,6 +32,10 @@ const FacultySchema = new mongoose.Schema(
       type: String,
       match: [/^\d{10}$/, "Phone number must be 10 digits"],
     },
+    profilePhoto:{
+      type: String,
+      default: ""
+    }
   },
   { timestamps: true }
 );

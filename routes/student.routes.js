@@ -5,12 +5,10 @@ import { studentAuthMiddleware } from "../middlewares/auth.js";
 const router = express.Router();
 
 router.get("/", getAllStudents);
-
 router.get("/me", studentAuthMiddleware, getCurrentStudent);
 
 // Create a new student
 router.post("/", createStudent);
-
 router.post("/login", loginStudent);
 
 

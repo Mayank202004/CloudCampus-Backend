@@ -54,7 +54,7 @@ export const loginFacultyAuthority = async (req, res) => {
   
       const { email, password } = req.body;
   
-      const authority = await FacultyAuthority.findOne({ email }).select("-signature -createdAt -updatedAt").populate("faculty","_id name email");
+      const authority = await FacultyAuthority.findOne({ email }).select("-signature -createdAt -updatedAt").populate("faculty","_id name email profilePhoto").lean();
   
       if (!authority) {
         return res.status(400).json({ message: 'Invalid email or password' });
