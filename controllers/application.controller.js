@@ -257,7 +257,7 @@ export const getStudentApplications = async (req, res) => {
 
 export const getApplicationsForApproval = async (req, res) => {
   try {
-    const authorityEmail = req.authority.email;
+    const authorityEmail = req.authority?.email || req.facultyAuthority?.email || req.studentAuthority?.email;
 
     // Fetch only applications which are pending and current level of acceptance is with the current authority
     let applications = await Application.find({
@@ -477,7 +477,9 @@ export const approveApplication = async (req, res) => {
       Notification.insertMany(notifications),
     ]);
 
-    res.status(200).json({ message: "Application approved successfully", application });
+    const populatedApplication = await populateApplicationAuthorities(application);
+
+    res.status(200).json({ message: "Application approved successfully", application:populatedApplication });
 
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -491,8 +493,10 @@ export const approveApplication = async (req, res) => {
 export const rejectApplication = async (req, res) => {
   try {
     const { reason } = req.body;
-    console.log(req.authority);
-    const facultyEmail = req.authority.email; 
+    const authorityEmail = req.faculty?.email || req.facultyAuthority?.email || req.studentAuthority?.email; 
+
+    if(!authorityEmail)
+      return res.status(403).json({ message: "Unauthorized: You cannot approve this application" });
 
     if(!reason) {
       return res.status(400).json({ message: "Reason is required for rejecting" });
@@ -505,7 +509,7 @@ export const rejectApplication = async (req, res) => {
     }
 
     // Check if the current recipient matches the faculty email
-    if (application.currentRecipient !== facultyEmail) {
+    if (application.currentRecipient !== authorityEmail) {
       return res.status(403).json({ message: "Unauthorized: You cannot approve this application" });
     }
 
@@ -514,7 +518,7 @@ export const rejectApplication = async (req, res) => {
       return res.status(400).json({ message: "Application is already fully approved." });
     }
 
-    let currentIndex = application.to.findIndex(recipient => recipient.authority === facultyEmail);
+    let currentIndex = application.to.findIndex(recipient => recipient.authority === authorityEmail);
 
     // Check if the faculty is an approver
     if (currentIndex === -1) {
@@ -533,9 +537,9 @@ export const rejectApplication = async (req, res) => {
     // Send notification to student
     await Notification.create({
       title: "Application Rejected",
-      description: `Your application titled "${application.title}" has been rejected by ${req.authority.name} due to: ${reason}`,
+      description: `Your application titled "${application.title}" has been rejected by ${req.facultyAuthority?.position || req.faculty.name || req.studentAuthority.position} due to: ${reason}`,
       notifiedTo: application.from, 
-      from: facultyEmail, 
+      from: authorityEmail, 
     });
 
     await application.save();
@@ -695,4 +699,57 @@ export const getApplicationPrint = async (req, res) => {
     console.error("Printing application:", error);
     res.status(500).send("Internal Server Error");
   }
+};
+
+
+
+
+// = = = = = = = = = Helpers  = = = = = = = = = =
+
+/**
+ * @desc Populate application authorities
+ * @param {Application} app - The application to be populated
+ * @returns - The populated application
+ */
+export const populateApplicationAuthorities = async (app) => {
+  // Populate 'from' student
+  const student = await Student.findById(app.from).select("name email registrationNo").lean();
+  // Populate 'to' authorities
+  const toEntities = await Promise.all(
+    app.to.map(async (entry) => {
+      const email = entry.authority;
+      // Check faculty authority
+      const facultyAuth = await FacultyAuthority.findOne({ email }).populate("faculty").lean();
+      if (facultyAuth?.faculty) {
+        return {
+          authority: email,
+          status: entry.status,
+          _id: entry._id,
+          name: facultyAuth.faculty.name || "Unknown",
+          registrationNo: facultyAuth.faculty.registrationNo || "N/A",
+          role: "Faculty Authority",
+        };
+      }
+      // Check student authority
+      const studentAuth = await StudentAuthority.findOne({ email }).populate("student").lean();
+      if (studentAuth?.student) {
+        return {
+          authority: email,
+          status: entry.status,
+          _id: entry._id,
+          name: studentAuth.student.name || "Unknown",
+          registrationNo: studentAuth.student.registrationNo || "N/A",
+          role: "Student Authority",
+        };
+      }
+      return { authority: email, status: entry.status, _id: entry._id };
+    })
+  );
+  const appObj = app.toObject ? app.toObject() : app;
+
+  return {
+    ...appObj,
+    from: student || null,
+    to: toEntities,
+  };
 };
