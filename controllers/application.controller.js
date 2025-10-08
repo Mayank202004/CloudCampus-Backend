@@ -325,7 +325,7 @@ export const getApplicationsForApproval = async (req, res) => {
 
 export const getAllAuthorityApplications = async (req, res) => {
   try {
-    const authorityEmail = req.authority.email;
+    const authorityEmail = req.authority?.email || req.facultyAuthority?.email || req.studentAuthority?.email;
 
     // Fetch all applications which are approved/pending/sent back ...
     let applications = await Application.find({
