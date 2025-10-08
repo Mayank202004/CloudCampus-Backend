@@ -438,6 +438,7 @@ export const approveApplication = async (req, res) => {
     // Check if all `to` authorities have approved
     if (currentIndex === application.to.length - 1) {
       application.isApproved = true;
+      application.status = "approved";
       application.currentRecipient = ""; // No more recipients
 
       // Notify the student about full approval
@@ -533,6 +534,7 @@ export const rejectApplication = async (req, res) => {
     // Mark as rejected
     application.to[currentIndex].status = "rejected";
     application.reason = reason;
+    application.status = "rejected";
 
     // Send notification to student
     await Notification.create({
@@ -544,7 +546,7 @@ export const rejectApplication = async (req, res) => {
 
     await application.save();
 
-    res.status(200).json({ message: "Application rejected successfully", application });
+    res.status(200).json({ message: "Application rejected successfully" });
 
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -599,6 +601,7 @@ export const sendBackToApplicant = async (req, res) => {
     // Mark as sent back
     application.to[currentIndex].status = "sent back to applicant";
     application.reason = reason;
+    application.status = "returned back to applicant";
 
     // Send notification to student
     await Notification.create({
