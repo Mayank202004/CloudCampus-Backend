@@ -559,8 +559,11 @@ export const rejectApplication = async (req, res) => {
 export const sendBackToApplicant = async (req, res) => {
   try {
     const { reason } = req.body;
-    console.log(req.authority);
-    const facultyEmail = req.authority.email;
+    const authorityEmail = req.faculty?.email || req.facultyAuthority?.email || req.studentAuthority?.email;
+    const authorityName = req.faculty?.name || req.facultyAuthority?.position || req.studentAuthority?.position; 
+
+    if(!authorityEmail)
+      return res.status(403).json({ message: "Unauthorized: You cannot approve this application" });
 
     if (!reason) {
       return res.status(400).json({ message: "Reason is required for sending back the application" });
@@ -572,8 +575,8 @@ export const sendBackToApplicant = async (req, res) => {
       return res.status(404).json({ message: "Application not found" });
     }
 
-    // Check if the current recipient matches the faculty email
-    if (application.currentRecipient !== facultyEmail) {
+    // Check if the current recipient matches the authrity email
+    if (application.currentRecipient !== authorityEmail) {
       return res.status(403).json({ message: "Unauthorized: You cannot approve this application" });
     }
 
@@ -586,7 +589,7 @@ export const sendBackToApplicant = async (req, res) => {
       return res.status(400).json({ message: "Application has already been rejected by an authority. It cannot be sent back." });
     }
 
-    let currentIndex = application.to.findIndex(recipient => recipient.authority === facultyEmail);
+    let currentIndex = application.to.findIndex(recipient => recipient.authority === authorityEmail);
 
     // Check if the faculty is an approver
     if (currentIndex === -1) {
@@ -606,9 +609,9 @@ export const sendBackToApplicant = async (req, res) => {
     // Send notification to student
     await Notification.create({
       title: "Application Sent Back",
-      description: `Your application titled "${application.title}" has been sent back by ${req.authority.name} due to: ${reason}`,
+      description: `Your application titled "${application.title}" has been sent back by ${authorityName} due to: ${reason}`,
       notifiedTo: application.from,
-      from: facultyEmail,
+      from: authorityEmail,
     });
 
     await application.save({ validateBeforeSave: false }),

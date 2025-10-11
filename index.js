@@ -32,7 +32,7 @@ const PORT = process.env.PORT || 5000;
 
 
 app.use(cors({
-    origin: ["http://10.56.247.63:5173","*"],
+    origin: ["http://10.138.216.63:5173","*"],
     credentials: true
 }));
 app.use(cookieParser())
