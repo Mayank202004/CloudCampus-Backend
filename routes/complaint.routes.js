@@ -7,18 +7,19 @@ import {
   getAllComplaintSenders,
   increaseAnonymousCount,
 } from "../controllers/complaint.controller.js";
-import { studentAuthMiddleware, FacultyAuthorityAuthMiddleware } from "../middlewares/auth.js";
+import { studentAuthMiddleware, FacultyAuthorityAuthMiddleware, facultyAuthMiddleware, StudentAuthorityAuthMiddleware } from "../middlewares/auth.js";
+import { orMiddleware } from "../middlewares/orMiddleware.js";
 
 const router = express.Router();
 
 // Create a new complaint (only for authenticated students)
-router.post("/", studentAuthMiddleware, createComplaint);
+router.post("/", orMiddleware([FacultyAuthorityAuthMiddleware, studentAuthMiddleware, facultyAuthMiddleware, StudentAuthorityAuthMiddleware]), createComplaint);
 
 // Get all complaints (for admin or faculty handling complaints)
-router.get("/", studentAuthMiddleware, getAllComplaints);
-router.get("/senders", studentAuthMiddleware, getAllComplaintSenders);
+router.get("/",orMiddleware([FacultyAuthorityAuthMiddleware, studentAuthMiddleware, facultyAuthMiddleware, StudentAuthorityAuthMiddleware]), getAllComplaints);
+router.get("/senders", orMiddleware([FacultyAuthorityAuthMiddleware, studentAuthMiddleware, facultyAuthMiddleware, StudentAuthorityAuthMiddleware]), getAllComplaintSenders);
 
-router.patch("/approve/:complaintId", FacultyAuthorityAuthMiddleware, increaseAnonymousCount)
+router.patch("/approve/:complaintId", orMiddleware([FacultyAuthorityAuthMiddleware,facultyAuthMiddleware,StudentAuthorityAuthMiddleware]), increaseAnonymousCount)
 
 // Get a single complaint by ID
 // router.get("/:id", studentAuthMiddleware, getComplaintById);

@@ -8,7 +8,6 @@ import Student from "../models/student.models.js";
 export const createCheatingRecord = async (req, res) => {
   try {
     const { studentId, title, description, proof } = req.body;
-    console.log(studentId, title, description, proof)
     let arr = [];
     arr.push(proof)
 
